@@ -7,6 +7,7 @@ type Props = {
   containerClass?: string;
   heightLimit?: number;
   customButtonComponent?: (props: { onClick: () => void; children: JSX.Element }) => JSX.Element;
+  hidingClass?: string;
   showMoreLabel: string;
 };
 
@@ -66,7 +67,12 @@ export default function LessViewContent(props: Props) {
         {props.children}
 
         <Show when={!expanded() && isContentOverflowing()}>
-          <div class="pointer-events-none absolute bottom-0 left-0 h-16 w-full bg-gradient-to-t from-surface-500 to-transparent" />
+          <div
+            class={mergeCls(
+              "pointer-events-none absolute bottom-0 left-0 h-16 w-full bg-gradient-to-t from-white to-transparent",
+              props.hidingClass,
+            )}
+          />
         </Show>
       </div>
 
@@ -74,7 +80,7 @@ export default function LessViewContent(props: Props) {
         <Show
           when={props.customButtonComponent}
           fallback={
-            <button onClick={() => setExpanded(true)} class="absolute bottom-0 left-0 w-full py-2 text-center text-sm">
+            <button onClick={() => setExpanded(true)} class="py-2 text-sm">
               {props.showMoreLabel}
             </button>
           }

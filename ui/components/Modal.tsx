@@ -134,7 +134,7 @@ export default function Modal(props: Props) {
         ref={onContainerMount}
         onClick={onClick}
         class={mergeCls(
-          "fixed min-h-52 min-w-60 transform overflow-hidden border border-gray-300",
+          "fixed min-h-52 min-w-60 transform overflow-hidden border border-gray-300 rounded flex flex-col",
           props.class,
         )}
         style={{
@@ -231,7 +231,9 @@ export default function Modal(props: Props) {
           </div>
         </header>
 
-        <main class="size-full overflow-hidden p-2 pb-16">{props.children}</main>
+        <main class="flex-grow overflow-auto">
+          {props.children}
+        </main>
       </div>
     </Show>
   );
