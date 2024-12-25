@@ -165,14 +165,14 @@ export default function Modal(props: Props) {
                 : "70vw",
           height:
             (isMaximized() ?? maximizable)
-              ? "calc(100vh - " +
+              ? "calc(100svh - " +
                 (props.maximizeOffset?.top ?? 0) +
                 "px - " +
                 (props.maximizeOffset?.bottom ?? 0) +
                 "px)"
               : props.size?.height
                 ? props.size.height + "px"
-                : "70vh",
+                : "70svh",
         }}
       >
         <header class={mergeCls("flex items-center justify-between gap-2 p-2", props.headerClass)}>
