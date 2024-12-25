@@ -1,7 +1,7 @@
 {
   "name": "acore-solidjs",
   "version": "1.0.0",
-  "description": "SolidJS components prepared for general use during development.",
+  "description": "Core TypeScript package with reusable implementations and helper code snippets for various software development needs.",
   "repository": {
     "type": "git",
     "url": "https://github.com/ahmetcetinkaya/acore-solidjs.git"
@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "solid-js": "^1.9.3",
+    "tailwindcss": "^3.4.17",
     "three": "^0.170.0"
   },
   "devDependencies": {
