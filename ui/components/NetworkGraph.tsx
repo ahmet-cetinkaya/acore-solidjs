@@ -21,6 +21,7 @@ type State = {
   isPanning: boolean;
   panOffset: { x: number; y: number };
   scale: number;
+  lastPinchDistance: number | null;
 };
 
 const layoutSettings = {
@@ -54,7 +55,8 @@ export default function NetworkGraph(props: Props) {
     nodeDragging: null,
     isPanning: false,
     panOffset: { x: 0, y: 0 },
-    scale: 1,
+    scale: 0.9,
+    lastPinchDistance: null,
   });
 
   const memoizedNodes = createMemo(() => state().nodes);
@@ -81,6 +83,9 @@ export default function NetworkGraph(props: Props) {
     if (animationFrameId !== null) cancelAnimationFrame(animationFrameId);
 
     canvasElement!.removeEventListener("mousemove", onMouseMove);
+    canvasElement!.removeEventListener("touchmove", onTouchMove);
+    canvasElement!.removeEventListener("touchstart", onTouchStart);
+    canvasElement!.removeEventListener("touchend", onTouchEnd);
     window.removeEventListener("mouseup", onMouseUp);
     canvasElement!.removeEventListener("wheel", onWheel);
 
@@ -93,6 +98,9 @@ export default function NetworkGraph(props: Props) {
     resizeCanvas();
 
     canvasElement.addEventListener("mousemove", onMouseMove);
+    canvasElement.addEventListener("touchmove", onTouchMove, { passive: false });
+    canvasElement.addEventListener("touchstart", onTouchStart, { passive: false });
+    canvasElement.addEventListener("touchend", onTouchEnd);
     window.addEventListener("mouseup", onMouseUp);
     canvasElement.addEventListener("wheel", onWheel);
   }
@@ -404,6 +412,111 @@ export default function NetworkGraph(props: Props) {
       ),
     }));
     drawGraph();
+  }
+
+  function onTouchStart(event: TouchEvent) {
+    event.preventDefault();
+    if (event.touches.length === 2) {
+      // Initialize pinch-to-zoom
+      const distance = getPinchDistance(event.touches);
+      setState((prev) => ({ ...prev, lastPinchDistance: distance }));
+      return;
+    }
+
+    const touch = event.touches[0];
+    const scale = state().scale;
+    const rect = canvasElement!.getBoundingClientRect();
+    const x = (touch.clientX - rect.left) / scale;
+    const y = (touch.clientY - rect.top) / scale;
+    const node = memoizedNodes().find((node) => Math.hypot(node.x! - x, node.y! - y) < layoutSettings.nodeRadius);
+    
+    if (node) {
+      setState((prevState) => ({
+        ...prevState,
+        nodeDragging: { id: node.id, x: touch.clientX / scale, y: touch.clientY / scale },
+      }));
+    } else {
+      setState((prevState) => ({
+        ...prevState,
+        isPanning: true,
+        panOffset: { x: touch.clientX, y: touch.clientY },
+      }));
+    }
+  }
+
+  function onTouchMove(event: TouchEvent) {
+    event.preventDefault();
+    if (event.touches.length === 2) {
+      handlePinchZoom(event);
+      return;
+    }
+
+    const touch = event.touches[0];
+    const scale = state().scale;
+
+    if (state().nodeDragging?.id) {
+      const rect = canvasElement!.getBoundingClientRect();
+      const newX = (touch.clientX - rect.left) / scale;
+      const newY = (touch.clientY - rect.top) / scale;
+
+      setState((prevState) => ({
+        ...prevState,
+        nodes: memoizedNodes().map((node) =>
+          node.id === state().nodeDragging!.id ? { ...node, x: newX, y: newY } : node,
+        ),
+        nodeDragging: { ...state().nodeDragging!, x: newX, y: newY },
+      }));
+    } else if (state().isPanning) {
+      const distanceX = touch.clientX - state().panOffset.x;
+      const distanceY = touch.clientY - state().panOffset.y;
+
+      setState((prevState) => ({
+        ...prevState,
+        nodes: memoizedNodes().map((node) => ({
+          ...node,
+          x: node.x! + distanceX / scale,
+          y: node.y! + distanceY / scale,
+        })),
+        panOffset: { x: touch.clientX, y: touch.clientY },
+      }));
+    }
+    drawGraph();
+  }
+
+  function handlePinchZoom(event: TouchEvent) {
+    const currentDistance = getPinchDistance(event.touches);
+    const lastDistance = state().lastPinchDistance;
+
+    if (lastDistance !== null) {
+      const delta = currentDistance - lastDistance;
+      const scaleChange = delta * layoutSettings.canvasScaleStep * 0.5;
+
+      setState((prevState) => ({
+        ...prevState,
+        scale: Math.min(
+          Math.max(prevState.scale + scaleChange, layoutSettings.canvasScaleMin),
+          layoutSettings.canvasScaleMax
+        ),
+        lastPinchDistance: currentDistance
+      }));
+
+      drawGraph();
+    }
+  }
+
+  function getPinchDistance(touches: TouchList) {
+    const dx = touches[0].clientX - touches[1].clientX;
+    const dy = touches[0].clientY - touches[1].clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+  }
+
+  function onTouchEnd() {
+    setState((prevState) => ({ 
+      ...prevState, 
+      nodeDragging: null, 
+      isPanning: false,
+      lastPinchDistance: null 
+    }));
   }
 
   return (
