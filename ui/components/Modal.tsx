@@ -134,7 +134,7 @@ export default function Modal(props: Props) {
         ref={onContainerMount}
         onClick={onClick}
         class={mergeCls(
-          "shadow-md bg-whitez fixed min-h-52 min-w-60 transform overflow-hidden rounded-lg border border-gray-300",
+          "fixed min-h-52 min-w-60 transform overflow-hidden border border-gray-300",
           props.class,
         )}
         style={{
