@@ -12,7 +12,7 @@ type Props = {
 
 /**
  * A component that renders an SVG icon.
- * 
+ *
  * @param props - The component properties.
  * @param props.svg - The SVG content to render.
  * @param props.alt - The alt text for the SVG.

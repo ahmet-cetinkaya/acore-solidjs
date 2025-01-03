@@ -231,9 +231,7 @@ export default function Modal(props: Props) {
           </div>
         </header>
 
-        <main class="flex-grow overflow-auto">
-          {props.children}
-        </main>
+        <main class="flex-grow overflow-auto">{props.children}</main>
       </div>
     </Show>
   );

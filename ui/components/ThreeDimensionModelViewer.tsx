@@ -30,7 +30,7 @@ type Props = {
 
 /**
  * ThreeDimensionModelViewer component to display a 3D model using Three.js.
- * 
+ *
  * @param props - The component properties.
  * @param props.decoderPath - The path to the Draco decoder.
  * @param props.modelPath - The path to the 3D model.

@@ -33,7 +33,7 @@ const DEFAULT_MARKDOWN_OPTIONS = {
 
 /**
  * A component that renders parsed markdown content inside an article element.
- * 
+ *
  * @param props - The component properties.
  * @param props.content - The markdown content to render.
  * @param props.class - The class name for the article element.

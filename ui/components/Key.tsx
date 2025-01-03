@@ -21,7 +21,7 @@ type KeyProps<TItem, TKey extends KeyableType> = {
  * @param props.each - The list of items to map over.
  * @param props.by - The function that returns the key for each item.
  * @param props.children - The render function that receives the item and index.
- * 
+ *
  * @example
  * <Key each={items()} by={(item) => item.id}>
  *   {(item, index) => <div>{index()}: {item().name}</div>}

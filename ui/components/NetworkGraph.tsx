@@ -429,7 +429,7 @@ export default function NetworkGraph(props: Props) {
     const x = (touch.clientX - rect.left) / scale;
     const y = (touch.clientY - rect.top) / scale;
     const node = memoizedNodes().find((node) => Math.hypot(node.x! - x, node.y! - y) < layoutSettings.nodeRadius);
-    
+
     if (node) {
       setState((prevState) => ({
         ...prevState,
@@ -495,9 +495,9 @@ export default function NetworkGraph(props: Props) {
         ...prevState,
         scale: Math.min(
           Math.max(prevState.scale + scaleChange, layoutSettings.canvasScaleMin),
-          layoutSettings.canvasScaleMax
+          layoutSettings.canvasScaleMax,
         ),
-        lastPinchDistance: currentDistance
+        lastPinchDistance: currentDistance,
       }));
 
       drawGraph();
@@ -511,11 +511,11 @@ export default function NetworkGraph(props: Props) {
   }
 
   function onTouchEnd() {
-    setState((prevState) => ({ 
-      ...prevState, 
-      nodeDragging: null, 
+    setState((prevState) => ({
+      ...prevState,
+      nodeDragging: null,
       isPanning: false,
-      lastPinchDistance: null 
+      lastPinchDistance: null,
     }));
   }
 
