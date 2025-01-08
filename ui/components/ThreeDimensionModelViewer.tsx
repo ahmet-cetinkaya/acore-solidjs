@@ -1,5 +1,12 @@
 import { createSignal, onCleanup, Show, type JSX } from "solid-js";
-import { AmbientLight, Camera, OrthographicCamera, Scene, SRGBColorSpace, Vector3, WebGLRenderer } from "three";
+import {
+  AmbientLight,
+  OrthographicCamera,
+  Scene,
+  SRGBColorSpace,
+  Vector3,
+  WebGLRenderer
+} from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
 import { GLTFLoader, type GLTF } from "three/examples/jsm/loaders/GLTFLoader.js";
@@ -212,7 +219,7 @@ export default function ThreeDimensionModelViewer(props: Props) {
       controls.update();
     }
 
-    renderer.render(scene, camera as Camera);
+    renderer.render(scene, camera);
     requestAnimationFrame(animate);
   }
 
