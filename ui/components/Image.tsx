@@ -3,9 +3,9 @@ import type { JSX } from "solid-js/jsx-runtime";
 interface ImgSource {
   media: string;
   srcset: string;
-};
+}
 
-interface ImageNativeProps extends Omit<JSX.ImgHTMLAttributes<HTMLImageElement>, 'src' | 'alt'> {
+interface ImageNativeProps extends Omit<JSX.ImgHTMLAttributes<HTMLImageElement>, "src" | "alt"> {
   src: string;
   alt: string;
 }
