@@ -128,6 +128,13 @@ export default function Modal(props: Props) {
     return targetElement.closest(".ac-header-buttons");
   }
 
+  function onHeaderDoubleClick(event: MouseEvent) {
+    // Ignore if clicking buttons or if window is not maximizable
+    if (isHeaderButton(event.target as HTMLElement) || !maximizable) return;
+    
+    toggleMaximize();
+  }
+
   return (
     <Show when={isModalOpen()}>
       <div
@@ -175,7 +182,10 @@ export default function Modal(props: Props) {
                 : "70svh",
         }}
       >
-        <header class={mergeCls("flex items-center justify-between gap-2 p-2", props.headerClass)}>
+        <header 
+          class={mergeCls("flex items-center justify-between gap-2 p-2", props.headerClass)}
+          onDblClick={onHeaderDoubleClick}
+        >
           <h2 class="m-0 text-xl font-semibold">{props.title}</h2>
 
           <div class="ac-header-buttons flex cursor-pointer items-center justify-between gap-1">
