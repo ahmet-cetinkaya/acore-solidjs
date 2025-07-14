@@ -131,7 +131,7 @@ export default function Modal(props: Props) {
   function onHeaderDoubleClick(event: MouseEvent) {
     // Ignore if clicking buttons or if window is not maximizable
     if (isHeaderButton(event.target as HTMLElement) || !maximizable) return;
-    
+
     toggleMaximize();
   }
 
@@ -182,7 +182,7 @@ export default function Modal(props: Props) {
                 : "70svh",
         }}
       >
-        <header 
+        <header
           class={mergeCls("flex items-center justify-between gap-2 p-2", props.headerClass)}
           onDblClick={onHeaderDoubleClick}
         >

@@ -72,7 +72,7 @@ export default function NetworkGraph(props: Props) {
     beginAnimationSpeedThrottling();
     window.addEventListener("resize", resizeCanvas);
     observeContainerResize();
-    centerNodesOnCanvas(); 
+    centerNodesOnCanvas();
   });
 
   createEffect(() => {
@@ -334,25 +334,25 @@ export default function NetworkGraph(props: Props) {
 
   function resizeCanvas() {
     if (!canvasElement) return;
-    
+
     // Get the device pixel ratio and the parent element dimensions
     const devicePixelRatio = window.devicePixelRatio || 1;
     const displayWidth = canvasElement.parentElement!.clientWidth;
     const displayHeight = canvasElement.parentElement!.clientHeight;
-    
+
     // Set the canvas size in CSS pixels (for layout)
     canvasElement.style.width = `${displayWidth}px`;
     canvasElement.style.height = `${displayHeight}px`;
-    
+
     // Set the canvas internal dimensions accounting for pixel ratio
     canvasElement.width = Math.floor(displayWidth * devicePixelRatio);
     canvasElement.height = Math.floor(displayHeight * devicePixelRatio);
-    
+
     // Scale the context to account for the pixel ratio
     if (canvasContext) {
       canvasContext.scale(devicePixelRatio, devicePixelRatio);
     }
-    
+
     drawGraph();
   }
 
@@ -539,47 +539,50 @@ export default function NetworkGraph(props: Props) {
 
   function centerNodesOnCanvas() {
     if (!canvasElement) return;
-    
+
     // Calculate the bounds of all nodes
-    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-    
+    let minX = Infinity,
+      minY = Infinity,
+      maxX = -Infinity,
+      maxY = -Infinity;
+
     const nodes = memoizedNodes();
     if (nodes.length === 0) return;
-    
+
     // Find the bounds of all positioned nodes
-    const positionedNodes = nodes.filter(node => node.x !== undefined && node.y !== undefined);
+    const positionedNodes = nodes.filter((node) => node.x !== undefined && node.y !== undefined);
     if (positionedNodes.length === 0) return;
-    
-    positionedNodes.forEach(node => {
+
+    positionedNodes.forEach((node) => {
       if (node.x! < minX) minX = node.x!;
       if (node.y! < minY) minY = node.y!;
       if (node.x! > maxX) maxX = node.x!;
       if (node.y! > maxY) maxY = node.y!;
     });
-    
+
     // Calculate center of the node group
     const nodesCenterX = (minX + maxX) / 2;
     const nodesCenterY = (minY + maxY) / 2;
-    
+
     // Get canvas center (accounting for device pixel ratio)
     const devicePixelRatio = window.devicePixelRatio || 1;
-    const canvasCenterX = (canvasElement.width / devicePixelRatio) / 2;
-    const canvasCenterY = (canvasElement.height / devicePixelRatio) / 2;
-    
+    const canvasCenterX = canvasElement.width / devicePixelRatio / 2;
+    const canvasCenterY = canvasElement.height / devicePixelRatio / 2;
+
     // Calculate the offset needed to center nodes
     const offsetX = canvasCenterX - nodesCenterX;
     const offsetY = canvasCenterY - nodesCenterY;
-    
+
     // Apply the offset to all nodes
-    setState(prevState => ({
+    setState((prevState) => ({
       ...prevState,
-      nodes: nodes.map(node => ({
+      nodes: nodes.map((node) => ({
         ...node,
         x: node.x !== undefined ? node.x + offsetX : node.x,
-        y: node.y !== undefined ? node.y + offsetY : node.y
-      }))
+        y: node.y !== undefined ? node.y + offsetY : node.y,
+      })),
     }));
-    
+
     drawGraph();
   }
 
