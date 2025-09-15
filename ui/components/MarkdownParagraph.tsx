@@ -1,4 +1,4 @@
-import MarkdownParser, { type MarkdownOptions } from "@core/acore-ts/ui/MarkdownParser";
+import MarkdownParser, { type MarkdownOptions } from "@packages/acore-ts/ui/MarkdownParser";
 
 type Props = {
   content: string;

@@ -26,7 +26,7 @@
     "noPropertyAccessFromIndexSignature": false,
 
     "paths": {
-      "@core/acore-ts/*": ["../acore-ts/*"]
+      "@packages/acore-ts/*": ["../acore-ts/*"]
     }
   }
 }
