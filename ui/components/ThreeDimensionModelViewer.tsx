@@ -3,8 +3,8 @@ import { AmbientLight, OrthographicCamera, Scene, SRGBColorSpace, Vector3, WebGL
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
 import { GLTFLoader, type GLTF } from "three/examples/jsm/loaders/GLTFLoader.js";
-import EasingHelper from "~/core/acore-ts/ui/animation/EasingHelper";
-import { mergeCls } from "~/core/acore-ts/ui/ClassHelpers";
+import EasingHelper from "@core/acore-ts/ui/animation/EasingHelper";
+import { mergeCls } from "@core/acore-ts/ui/ClassHelpers";
 
 type Props = {
   /**

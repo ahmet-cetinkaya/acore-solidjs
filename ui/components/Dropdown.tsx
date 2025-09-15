@@ -1,5 +1,5 @@
 import { createEffect, createSignal, Index, Show, type JSX } from "solid-js";
-import { mergeCls } from "~/core/acore-ts/ui/ClassHelpers";
+import { mergeCls } from "@core/acore-ts/ui/ClassHelpers";
 
 export type BaseDropdownItem = {
   text: string;

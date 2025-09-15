@@ -1,6 +1,6 @@
 import { createEffect, createMemo, createSignal, onCleanup, Show } from "solid-js";
 import type { JSX } from "solid-js/jsx-runtime";
-import { mergeCls } from "~/core/acore-ts/ui/ClassHelpers";
+import { mergeCls } from "@core/acore-ts/ui/ClassHelpers";
 
 type Props = {
   children: JSX.Element;
