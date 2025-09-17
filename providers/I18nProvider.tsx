@@ -1,26 +1,26 @@
-import { createContext, useContext } from 'solid-js';
-import type { ParentProps } from 'solid-js';
-import I18n from 'acore-ts/i18n/I18n';
-import type II18n from 'acore-ts/i18n/abstraction/II18n';
-import { onMount } from 'solid-js';
+import I18n from "acore-ts/i18n/I18n";
+import type II18n from "acore-ts/i18n/abstraction/II18n";
+import type { ParentProps } from "solid-js";
+import { createContext, createEffect, createSignal, onMount, useContext } from "solid-js";
 
-type UseI18nReturn = II18n & {
+type UseI18nReturn = {
+  i18n: II18n;
   t(key: string): string;
+  locale: () => string;
+  setLocale: (locale: string) => void;
 };
 
-type I18nContextType = II18n;
+type I18nContextType = UseI18nReturn;
 
 const I18nContext = createContext<I18nContextType>();
 
 export const useI18n = (): UseI18nReturn => {
-  const context = useContext(I18nContext) as II18n;
+  const context = useContext(I18nContext);
   if (!context) {
-    throw new Error('useI18n must be used within I18nProvider');
+    throw new Error("useI18n must be used within I18nProvider");
   }
-  return {
-    ...context,
-    t: (key: string) => context.translate(context.currentLocale.get(), key)
-  };
+
+  return context;
 };
 
 interface I18nProviderProps extends ParentProps {
@@ -31,22 +31,49 @@ interface I18nProviderProps extends ParentProps {
 
 export const I18nProvider = (props: I18nProviderProps) => {
   const i18n = props.i18n || new I18n();
+  const [locale, setLocale] = createSignal(i18n.currentLocale.get() || "");
+
+  // Create a reactive translation function
+  const t = (key: string) => {
+    // Access locale signal to make this function reactive
+    return i18n.translate(locale(), key);
+  };
 
   onMount(() => {
     if (!props.i18n) {
       i18n.translations = props.translations;
-      const locale = i18n.getBrowserLocale();
-      if (props.defaultLocale && !i18n.locales.includes(locale)) {
+      const browserLocale = i18n.getBrowserLocale();
+      if (props.defaultLocale && !i18n.locales.includes(browserLocale)) {
         i18n.currentLocale.set(props.defaultLocale);
       } else {
-        i18n.currentLocale.set(locale);
+        i18n.currentLocale.set(browserLocale);
       }
+      // Update the signal with the actual locale
+      setLocale(i18n.currentLocale.get());
     }
   });
 
-  return (
-    <I18nContext.Provider value={i18n}>
-      {props.children}
-    </I18nContext.Provider>
-  );
+  // Sync the signal with the store
+  createEffect(() => {
+    const updateLocale = () => setLocale(i18n.currentLocale.get());
+    i18n.currentLocale.subscribe(updateLocale);
+
+    // Cleanup subscription
+    return () => i18n.currentLocale.unsubscribe(updateLocale);
+  });
+
+  // Override the setLocale function to update both the signal and the store
+  const updateLocale = (newLocale: string) => {
+    i18n.currentLocale.set(newLocale);
+    setLocale(newLocale);
+  };
+
+  const contextValue: UseI18nReturn = {
+    i18n,
+    t,
+    locale,
+    setLocale: updateLocale,
+  };
+
+  return <I18nContext.Provider value={contextValue}>{props.children}</I18nContext.Provider>;
 };
