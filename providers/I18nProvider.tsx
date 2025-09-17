@@ -4,16 +4,23 @@ import I18n from 'acore-ts/i18n/I18n';
 import type II18n from 'acore-ts/i18n/abstraction/II18n';
 import { onMount } from 'solid-js';
 
+type UseI18nReturn = II18n & {
+  t(key: string): string;
+};
+
 type I18nContextType = II18n;
 
 const I18nContext = createContext<I18nContextType>();
 
-export const useI18n = (): I18nContextType => {
-  const context = useContext(I18nContext);
+export const useI18n = (): UseI18nReturn => {
+  const context = useContext(I18nContext) as II18n;
   if (!context) {
     throw new Error('useI18n must be used within I18nProvider');
   }
-  return context;
+  return {
+    ...context,
+    t: (key: string) => context.translate(context.currentLocale.get(), key)
+  };
 };
 
 interface I18nProviderProps extends ParentProps {
