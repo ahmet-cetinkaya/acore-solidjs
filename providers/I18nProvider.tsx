@@ -31,7 +31,7 @@ interface I18nProviderProps extends ParentProps {
 
 export const I18nProvider = (props: I18nProviderProps) => {
   const i18n = props.i18n || new I18n();
-  const [locale, setLocale] = createSignal(i18n.currentLocale.get() || "");
+  const [locale, setLocale] = createSignal(props.defaultLocale || "en");
 
   // Create a reactive translation function
   const t = (key: string) => {
@@ -42,18 +42,18 @@ export const I18nProvider = (props: I18nProviderProps) => {
   onMount(() => {
     if (!props.i18n) {
       i18n.translations = props.translations;
-
-      const preferred = i18n.loadPreferredLocale();
-      let initLocale: string;
-      if (preferred) {
-        initLocale = preferred;
-      } else {
-        const browserLocale = i18n.getBrowserLocale();
-        initLocale = i18n.locales.includes(browserLocale) ? browserLocale : (props.defaultLocale || 'en');
-      }
-      i18n.currentLocale.set(initLocale);
-      setLocale(initLocale);
     }
+
+    const preferred = i18n.loadPreferredLocale();
+    let initLocale: string;
+    if (preferred) {
+      initLocale = preferred;
+    } else {
+      const browserLocale = i18n.getBrowserLocale();
+      initLocale = i18n.locales.includes(browserLocale) ? browserLocale : (props.defaultLocale || 'en');
+    }
+    i18n.currentLocale.set(initLocale);
+    setLocale(initLocale);
   });
 
   // Sync the signal with the store
