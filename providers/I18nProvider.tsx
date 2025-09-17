@@ -42,14 +42,17 @@ export const I18nProvider = (props: I18nProviderProps) => {
   onMount(() => {
     if (!props.i18n) {
       i18n.translations = props.translations;
-      const browserLocale = i18n.getBrowserLocale();
-      if (props.defaultLocale && !i18n.locales.includes(browserLocale)) {
-        i18n.currentLocale.set(props.defaultLocale);
+
+      const preferred = i18n.loadPreferredLocale();
+      let initLocale: string;
+      if (preferred) {
+        initLocale = preferred;
       } else {
-        i18n.currentLocale.set(browserLocale);
+        const browserLocale = i18n.getBrowserLocale();
+        initLocale = i18n.locales.includes(browserLocale) ? browserLocale : (props.defaultLocale || 'en');
       }
-      // Update the signal with the actual locale
-      setLocale(i18n.currentLocale.get());
+      i18n.currentLocale.set(initLocale);
+      setLocale(initLocale);
     }
   });
 
@@ -64,8 +67,10 @@ export const I18nProvider = (props: I18nProviderProps) => {
 
   // Override the setLocale function to update both the signal and the store
   const updateLocale = (newLocale: string) => {
-    i18n.currentLocale.set(newLocale);
-    setLocale(newLocale);
+    const validLocale = i18n.locales.includes(newLocale) ? newLocale : (props.defaultLocale || 'en');
+    i18n.currentLocale.set(validLocale);
+    i18n.savePreferredLocale(validLocale);
+    setLocale(validLocale);
   };
 
   const contextValue: UseI18nReturn = {
