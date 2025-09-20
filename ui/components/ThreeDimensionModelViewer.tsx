@@ -1,10 +1,10 @@
+import EasingHelper from "@packages/acore-ts/ui/animation/EasingHelper";
+import { mergeCls } from "@packages/acore-ts/ui/ClassHelpers";
 import { createSignal, onCleanup, Show, type JSX } from "solid-js";
 import { AmbientLight, OrthographicCamera, Scene, SRGBColorSpace, Vector3, WebGLRenderer } from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
 import { GLTFLoader, type GLTF } from "three/examples/jsm/loaders/GLTFLoader.js";
-import EasingHelper from "@packages/acore-ts/ui/animation/EasingHelper";
-import { mergeCls } from "@packages/acore-ts/ui/ClassHelpers";
 
 type Props = {
   /**

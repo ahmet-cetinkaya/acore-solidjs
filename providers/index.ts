@@ -1,2 +1,2 @@
-export { useIoC, IoCProvider } from './IoCProvider';
-export { useI18n, I18nProvider } from './I18nProvider';
+export { I18nProvider, useI18n } from "./I18nProvider";
+export { IoCProvider, useIoC } from "./IoCProvider";

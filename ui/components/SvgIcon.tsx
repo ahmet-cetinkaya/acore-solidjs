@@ -1,5 +1,5 @@
-import { createMemo } from "solid-js";
 import { mergeCls } from "@packages/acore-ts/ui/ClassHelpers";
+import { createMemo } from "solid-js";
 
 type Props = {
   svg: string;

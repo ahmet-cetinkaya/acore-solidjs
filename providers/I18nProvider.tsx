@@ -50,7 +50,7 @@ export const I18nProvider = (props: I18nProviderProps) => {
       initLocale = preferred;
     } else {
       const browserLocale = i18n.getBrowserLocale();
-      initLocale = i18n.locales.includes(browserLocale) ? browserLocale : (props.defaultLocale || 'en');
+      initLocale = i18n.locales.includes(browserLocale) ? browserLocale : props.defaultLocale || "en";
     }
     i18n.currentLocale.set(initLocale);
     setLocale(initLocale);
@@ -67,7 +67,7 @@ export const I18nProvider = (props: I18nProviderProps) => {
 
   // Override the setLocale function to update both the signal and the store
   const updateLocale = (newLocale: string) => {
-    const validLocale = i18n.locales.includes(newLocale) ? newLocale : (props.defaultLocale || 'en');
+    const validLocale = i18n.locales.includes(newLocale) ? newLocale : props.defaultLocale || "en";
     i18n.currentLocale.set(validLocale);
     i18n.savePreferredLocale(validLocale);
     setLocale(validLocale);
