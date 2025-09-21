@@ -6,12 +6,12 @@ type IoCContextType = Injector;
 
 const IoCContext = createContext<IoCContextType>();
 
-export const useIoC = (): IoCContextType => {
+export const useService = <T,>(token: object): T => {
   const context = useContext(IoCContext);
   if (!context) {
-    throw new Error("useIoC must be used within IoCProvider");
+    throw new Error("useService must be used within IoCProvider");
   }
-  return context;
+  return context.resolve<T>(token);
 };
 
 interface IoCProviderProps extends ParentProps {
