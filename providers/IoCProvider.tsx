@@ -6,7 +6,7 @@ type IoCContextType = Injector;
 
 const IoCContext = createContext<IoCContextType>();
 
-export const useService = <T,>(token: object): T => {
+export const useService = <T,>(token: object | symbol): T => {
   const context = useContext(IoCContext);
   if (!context) {
     throw new Error("useService must be used within IoCProvider");
@@ -15,11 +15,11 @@ export const useService = <T,>(token: object): T => {
 };
 
 interface IoCProviderProps extends ParentProps {
-  initialContainer?: WeakMap<object, unknown>;
+  initialContainer?: Map<object | symbol, unknown>;
 }
 
 export const IoCProvider = (props: IoCProviderProps) => {
-  const initialContainer = props.initialContainer || new WeakMap<object, unknown>();
+  const initialContainer = props.initialContainer || new Map<object | symbol, unknown>();
   const injector = Injector.getInstance(initialContainer);
 
   return <IoCContext.Provider value={injector}>{props.children}</IoCContext.Provider>;
