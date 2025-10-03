@@ -15,6 +15,7 @@ type Props = {
   children: JSX.Element;
   class?: string;
   customHeaderButtons?: JSX.Element;
+  draggable?: boolean;
   dragOffset?: Offset;
   headerClass?: string;
   isMaximized?: boolean;
@@ -76,16 +77,19 @@ type Props = {
  */
 export default function Modal(props: Props) {
   const maximizable = props.maximizable ?? true;
+  const draggable = props.draggable ?? true;
 
   const [isModalOpen, setIsModalOpen] = createSignal(true);
   const [isMaximized, setIsMaximized] = createSignal(props.isMaximized ?? false);
 
   function onContainerMount(element: HTMLElement) {
-    DragHelper.makeDraggableElement(element, {
-      onDragStart,
-      onDragEnd,
-      offset: props.dragOffset,
-    });
+    if (draggable) {
+      DragHelper.makeDraggableElement(element, {
+        onDragStart,
+        onDragEnd,
+        offset: props.dragOffset,
+      });
+    }
 
     ResizeHelper.makeResizableElement(element, {
       onResizeStart: (event, size) => {
@@ -145,7 +149,6 @@ export default function Modal(props: Props) {
           props.class,
         )}
         style={{
-          ...props.style,
           top:
             (isMaximized() ?? maximizable)
               ? `${0 + (props.maximizeOffset?.top ?? 0)}px`
@@ -180,6 +183,7 @@ export default function Modal(props: Props) {
               : props.size?.height
                 ? props.size.height + "px"
                 : "70svh",
+          ...props.style,
         }}
       >
         <header
@@ -191,28 +195,30 @@ export default function Modal(props: Props) {
           <div class="ac-header-buttons flex cursor-pointer items-center justify-between gap-1">
             {props.customHeaderButtons}
 
-            <Show
-              when={props.customButton}
-              fallback={
-                <button
-                  onClick={toggleMaximize}
-                  class="rounded p-1 text-gray-500 hover:bg-gray-100 transition-colors duration-200 ease-in-out"
-                  aria-label={props.maximizeAriaLabel}
-                >
-                  <SvgIcon svg={IconSvgs.maximize} class="size-4" alt="Maximize icon" />
-                </button>
-              }
-            >
-              {props.customButton && (
-                <props.customButton onClick={toggleMaximize} ariaLabel={props.closeAriaLabel}>
-                  <Show
-                    when={props.IconComponent}
-                    fallback={<SvgIcon svg={IconSvgs.maximize} class="size-4" alt="Maximize icon" />}
+            <Show when={maximizable}>
+              <Show
+                when={props.customButton}
+                fallback={
+                  <button
+                    onClick={toggleMaximize}
+                    class="rounded p-1 text-gray-500 hover:bg-gray-100 transition-colors duration-200 ease-in-out"
+                    aria-label={props.maximizeAriaLabel}
                   >
-                    {props.IconComponent && <props.IconComponent icon={props.maximizeIcon!} class="size-4" />}
-                  </Show>
-                </props.customButton>
-              )}
+                    <SvgIcon svg={IconSvgs.maximize} class="size-4" alt="Maximize icon" />
+                  </button>
+                }
+              >
+                {props.customButton && (
+                  <props.customButton onClick={toggleMaximize} ariaLabel={props.closeAriaLabel}>
+                    <Show
+                      when={props.IconComponent}
+                      fallback={<SvgIcon svg={IconSvgs.maximize} class="size-4" alt="Maximize icon" />}
+                    >
+                      {props.IconComponent && <props.IconComponent icon={props.maximizeIcon!} class="size-4" />}
+                    </Show>
+                  </props.customButton>
+                )}
+              </Show>
             </Show>
 
             <Show
@@ -220,7 +226,7 @@ export default function Modal(props: Props) {
               fallback={
                 <button
                   onClick={toggleModal}
-                  class="rounded p-1 text-gray-500 hover:bg-gray-100 transition-colors duration-200 ease-in-out"
+                  class="rounded p-1 text-gray-300 hover:text-white hover:bg-gray-700 transition-colors duration-200 ease-in-out"
                   aria-label={props.closeAriaLabel}
                 >
                   <SvgIcon svg={IconSvgs.close} class="size-4" alt="Close icon" />
