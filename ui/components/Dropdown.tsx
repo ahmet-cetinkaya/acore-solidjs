@@ -57,14 +57,14 @@ export default function Dropdown(props: Props) {
 
   function Menu() {
     return (
-      <div class="shadow-lg absolute left-0 z-50 mt-2 w-56 origin-top-right rounded-md bg-surface-500 shadow-secondary ring-1 ring-black ring-opacity-5">
+      <div class="bg-surface-500 shadow-secondary absolute left-0 z-50 mt-2 w-56 origin-top-right rounded-md shadow-lg ring-1 ring-black ring-opacity-5">
         <div class="py-1" role="menu" aria-orientation="vertical" aria-labelledby="options-menu">
           <Index each={props.menuItems}>
             {(item) => {
               if (item().items)
                 return (
                   <>
-                    <h1 class="border-b border-surface-300 px-4 py-2 text-xs text-gray-300">{item().text}</h1>
+                    <h1 class="border-surface-300 border-b px-4 py-2 text-xs text-gray-300">{item().text}</h1>
                     <Index each={item().items}>
                       {(subitem) => <MenuItem item={subitem()} renderIcon={props.renderIcon} />}
                     </Index>

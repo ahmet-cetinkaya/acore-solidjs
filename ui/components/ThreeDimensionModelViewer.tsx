@@ -8,13 +8,16 @@ import { GLTFLoader, type GLTF } from "three/examples/jsm/loaders/GLTFLoader.js"
 
 type Props = {
   /**
-   * The path to the Draco decoder. This is required for loading models that use Draco compression.
-   * Path should be included `draco_decoder.js`, `draco_decoder.wasm`, `draco_encoder.js`, and `draco_wasm_wrapper.js` in public directory.
+   * The path to the Draco decoder. This is required for loading models that use Draco compression. Path should be
+   * included `draco_decoder.js`, `draco_decoder.wasm`, `draco_encoder.js`, and `draco_wasm_wrapper.js` in public
+   * directory.
+   *
    * @see https://threejs.org/docs/?q=drac#examples/en/loaders/DRACOLoader
    */
   decoderPath: string;
   /**
    * The path to the 3D model. The path should be in public directory.
+   *
    * @see https://threejs.org/docs/#examples/en/loaders/GLTFLoader
    */
   modelPath: string;
@@ -55,6 +58,7 @@ export default function ThreeDimensionModelViewer(props: Props) {
 
   /**
    * Handles the mounting of the container element.
+   *
    * @param {HTMLDivElement} element - The container element.
    */
   function onContainerElementMount(element: HTMLDivElement) {
@@ -81,6 +85,7 @@ export default function ThreeDimensionModelViewer(props: Props) {
 
   /**
    * Initializes the Three.js renderer, scene, camera, and controls.
+   *
    * @throws Will throw an error if the container element is not mounted.
    */
   function initThree() {
@@ -140,9 +145,7 @@ export default function ThreeDimensionModelViewer(props: Props) {
     setRenderElement(renderer.domElement);
   }
 
-  /**
-   * Loads the 3D model using GLTFLoader.
-   */
+  /** Loads the 3D model using GLTFLoader. */
   function loadModel() {
     loader?.load(
       props.modelPath,
@@ -167,9 +170,7 @@ export default function ThreeDimensionModelViewer(props: Props) {
     );
   }
 
-  /**
-   * Handles window resize events to adjust the renderer and camera.
-   */
+  /** Handles window resize events to adjust the renderer and camera. */
   function onWindowResized() {
     if (!containerRef || !renderer || !camera) return;
 
@@ -186,9 +187,7 @@ export default function ThreeDimensionModelViewer(props: Props) {
 
   let frame: number | undefined = 0;
   let initialCameraPosition: Vector3 | undefined;
-  /**
-   * Animates the scene.
-   */
+  /** Animates the scene. */
   function animate() {
     if (isLoading()) return;
     if (!controls || !scene || !renderer || !camera) return;

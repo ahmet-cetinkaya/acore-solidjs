@@ -32,6 +32,7 @@ export type Props = {
 
 /**
  * HtmlEditor is a component for editing HTML content with a toolbar.
+ *
  * @param props - The component properties.
  * @param props.class - The class name for the root element.
  * @param props.inputClass - The class name for the input element.
@@ -61,7 +62,7 @@ export default function HtmlEditor(props: Props) {
 
   return (
     <section class={mergeCls(props.class)}>
-      <header class={mergeCls("mb-2 flex border-b border-surface-300 p-2", props.toolbarClass)}>
+      <header class={mergeCls("border-surface-300 mb-2 flex border-b p-2", props.toolbarClass)}>
         <Index each={toolbarButtons()}>
           {(button) => (
             <ToolbarButton
@@ -147,7 +148,7 @@ function ToolbarButton(props: {
       fallback={
         <button
           onClick={props.onClick}
-          class="rounded p-1 text-gray-500 hover:bg-gray-100 transition-colors duration-200 ease-in-out"
+          class="rounded p-1 text-gray-500 transition-colors duration-200 ease-in-out hover:bg-gray-100"
           aria-label={props.ariaLabel}
         >
           <Icon svg={props.iconSvg} alt={props.ariaLabel} class="size-4" />

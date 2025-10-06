@@ -15,6 +15,7 @@ const DEFAULT_HEIGHT_LIMIT = 200;
 
 /**
  * A component that shows a limited amount of content and expands when a button is clicked.
+ *
  * @param props - The component properties.
  * @param props.children - The content to display.
  * @param props.containerClass - The class

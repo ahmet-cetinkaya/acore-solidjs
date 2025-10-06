@@ -145,7 +145,7 @@ export default function Modal(props: Props) {
         ref={onContainerMount}
         onClick={onClick}
         class={mergeCls(
-          "fixed min-h-52 min-w-60 transform overflow-hidden border border-gray-300 rounded flex flex-col",
+          "fixed flex min-h-52 min-w-60 transform flex-col overflow-hidden rounded border border-gray-300",
           props.class,
         )}
         style={{
@@ -201,7 +201,7 @@ export default function Modal(props: Props) {
                 fallback={
                   <button
                     onClick={toggleMaximize}
-                    class="rounded p-1 text-gray-500 hover:bg-gray-100 transition-colors duration-200 ease-in-out"
+                    class="rounded p-1 text-gray-500 transition-colors duration-200 ease-in-out hover:bg-gray-100"
                     aria-label={props.maximizeAriaLabel}
                   >
                     <SvgIcon svg={IconSvgs.maximize} class="size-4" alt="Maximize icon" />
@@ -226,7 +226,7 @@ export default function Modal(props: Props) {
               fallback={
                 <button
                   onClick={toggleModal}
-                  class="rounded p-1 text-gray-300 hover:text-white hover:bg-gray-700 transition-colors duration-200 ease-in-out"
+                  class="rounded p-1 text-gray-300 transition-colors duration-200 ease-in-out hover:bg-gray-700 hover:text-white"
                   aria-label={props.closeAriaLabel}
                 >
                   <SvgIcon svg={IconSvgs.close} class="size-4" alt="Close icon" />

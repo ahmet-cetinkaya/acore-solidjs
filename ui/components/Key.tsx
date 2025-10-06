@@ -17,15 +17,19 @@ type KeyProps<TItem, TKey extends KeyableType> = {
 /**
  * A Solid.js component that maps over a list of items and renders them using a provided key function.
  *
+ * @example
+ *   <Key each={items()} by={(item) => item.id}>
+ *     {(item, index) => (
+ *       <div>
+ *         {index()}: {item().name}
+ *       </div>
+ *     )}
+ *   </Key>;
+ *
  * @param props - The component properties.
  * @param props.each - The list of items to map over.
  * @param props.by - The function that returns the key for each item.
  * @param props.children - The render function that receives the item and index.
- *
- * @example
- * <Key each={items()} by={(item) => item.id}>
- *   {(item, index) => <div>{index()}: {item().name}</div>}
- * </Key>
  */
 export default function Key<TItem, TKey extends KeyableType>(props: KeyProps<TItem, TKey>): JSX.Element {
   // Map to store cleanup functions for each key

@@ -42,8 +42,9 @@ const layoutSettings = {
 };
 
 /**
- * A component that renders a network graph with nodes and edges.
- * The graph can be panned, zoomed, and nodes can be dragged.
+ * A component that renders a network graph with nodes and edges. The graph can be panned, zoomed, and nodes can be
+ * dragged.
+ *
  * @param props The component properties.
  * @param props.nodes The nodes to render in the graph.
  * @param props.renderNode An optional function to render custom nodes.
