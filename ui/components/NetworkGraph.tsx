@@ -1,4 +1,6 @@
 import { createEffect, createMemo, createSignal, onCleanup, onMount } from "solid-js";
+import SvgIcon from "./SvgIcon";
+import IconSvgs from "../constants/IconSvgs";
 
 export type Node = {
   id: string;
@@ -13,6 +15,7 @@ export type Node = {
 type Props = {
   nodes: Node[];
   renderNode?: (node: Node, context: CanvasRenderingContext2D) => void;
+  centerButtonTitle?: string;
 };
 
 type State = {
@@ -74,6 +77,19 @@ export default function NetworkGraph(props: Props) {
     window.addEventListener("resize", resizeCanvas);
     observeContainerResize();
     centerNodesOnCanvas();
+
+    // Add keyboard shortcut
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key === "C") {
+        event.preventDefault();
+        centerNodesOnCanvas();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+
+    onCleanup(() => {
+      window.removeEventListener("keydown", handleKeyDown);
+    });
   });
 
   createEffect(() => {
@@ -654,6 +670,16 @@ export default function NetworkGraph(props: Props) {
     }));
   }
 
+  function announceToScreenReader(message: string) {
+    const announcement = document.createElement("div");
+    announcement.setAttribute("aria-live", "polite");
+    announcement.setAttribute("aria-atomic", "true");
+    announcement.className = "sr-only";
+    announcement.textContent = message;
+    document.body.appendChild(announcement);
+    setTimeout(() => document.body.removeChild(announcement), 1000);
+  }
+
   function centerNodesOnCanvas() {
     if (!canvasElement) return;
 
@@ -690,24 +716,73 @@ export default function NetworkGraph(props: Props) {
     const offsetX = canvasCenterX - nodesCenterX;
     const offsetY = canvasCenterY - nodesCenterY;
 
-    // Apply the offset to all nodes
-    setState((prevState) => ({
-      ...prevState,
-      nodes: nodes.map((node) => ({
-        ...node,
-        x: node.x !== undefined ? node.x + offsetX : node.x,
-        y: node.y !== undefined ? node.y + offsetY : node.y,
-      })),
+    // Apply smooth transition animation
+    const startNodes = nodes.map((node) => ({ ...node }));
+    const targetNodes = nodes.map((node) => ({
+      ...node,
+      x: node.x !== undefined ? node.x + offsetX : node.x,
+      y: node.y !== undefined ? node.y + offsetY : node.y,
     }));
 
-    drawGraph();
+    let startTime: number | null = null;
+    const duration = 200; // 200ms transition
+
+    function animateCentering(timestamp: number) {
+      if (!startTime) startTime = timestamp;
+      const progress = Math.min((timestamp - startTime) / duration, 1);
+      const easeProgress = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+
+      const currentNodes = nodes.map((node, index) => ({
+        ...node,
+        x:
+          node.x !== undefined
+            ? startNodes[index].x! + (targetNodes[index].x! - startNodes[index].x!) * easeProgress
+            : node.x,
+        y:
+          node.y !== undefined
+            ? startNodes[index].y! + (targetNodes[index].y! - startNodes[index].y!) * easeProgress
+            : node.y,
+      }));
+
+      setState((prevState) => ({
+        ...prevState,
+        nodes: currentNodes,
+        scale: 0.9, // Reset to initial zoom
+      }));
+
+      if (progress < 1) {
+        requestAnimationFrame(animateCentering);
+      } else {
+        drawGraph();
+        // Announce to screen readers
+        announceToScreenReader("Graph view centered");
+      }
+    }
+
+    requestAnimationFrame(animateCentering);
+  }
+
+  function CenterGraphButton() {
+    const centerButtonTitle = props.centerButtonTitle || "Center graph view (Ctrl+Shift+C)";
+    const ariaLabel = props.centerButtonTitle || "Center graph view";
+
+    return (
+      <button
+        onClick={() => centerNodesOnCanvas()}
+        aria-label={ariaLabel}
+        title={centerButtonTitle}
+        class="text-surface-600 hover:bg-surface-100 absolute right-8 top-8 z-20 flex size-8 items-center justify-center rounded-lg"
+      >
+        <SvgIcon svg={IconSvgs.center} alt="Center graph" class="size-6" />
+      </button>
+    );
   }
 
   return (
-    <div ref={containerElement} class="relative size-full">
+    <div ref={containerElement} class="relative size-full p-8">
       <canvas
         ref={onCanvasMount}
-        class="block size-full"
+        class="absolute inset-8 block size-full"
         onMouseDown={(event) => {
           const scale = state().scale;
           const rect = canvasElement!.getBoundingClientRect();
@@ -717,6 +792,7 @@ export default function NetworkGraph(props: Props) {
           onMouseDown(event, node);
         }}
       />
+      <CenterGraphButton />
     </div>
   );
 }

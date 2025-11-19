@@ -1,5 +1,6 @@
 const IconSvgs = {
   bold: `<svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24"><path d="M8 11h4.5a2.5 2.5 0 0 0 0-5H8v5Zm10 4.5c0 2.5-2 4.5-4.5 4.5H6V4h6.5a4.5 4.5 0 0 1 3.3 7.6c1.3.8 2.2 2.2 2.2 3.9ZM8 13v5h5.5a2.5 2.5 0 0 0 0-5H8Z"/></svg>`,
+  center: `<svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24"><path d="M3.5 11H11V3.5L7.96 6.54 4.7 3.3 3.29 4.71l3.25 3.25L3.5 11Zm17 2H13v7.5l3.04-3.04 3.25 3.25 1.42-1.42-3.25-3.25L20.5 13Z"/></svg>`,
   close: `<svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24"><path d="m12 10.6 5-5 1.4 1.5-5 4.9 5 5-1.5 1.4-4.9-5-5 5L5.6 17l5-5-5-5L7 5.7l5 5Z"/></svg>`,
   formatClear: `<svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24"><path d="M12.65 14.07 11.6 20H9.57l1.35-7.66-7.4-7.41 1.4-1.42L20.5 19.07l-1.42 1.42-6.42-6.42Zm-.88-6.54L12.04 6h-1.8l-2-2H20v2h-5.93l-.57 3.26-1.73-1.73Z"/></svg>`,
   heading1: `<svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24"><path d="M13 20h-2v-7H4v7H2V4h2v7h7V4h2v16Zm8-12v12h-2v-9.8l-2 .5v-2l2.5-.7H21Z"/></svg>`,
