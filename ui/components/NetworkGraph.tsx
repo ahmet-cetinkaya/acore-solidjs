@@ -277,11 +277,27 @@ export default function NetworkGraph(props: Props) {
     if (!canvasContext) return;
     if (!props.nodes) return;
 
+    // Clear the entire canvas with pixel ratio consideration
+    const devicePixelRatio = window.devicePixelRatio || 1;
     canvasContext.clearRect(0, 0, canvasElement!.width, canvasElement!.height);
 
     applyForces();
 
     canvasContext.save();
+
+    // Set up proper clipping that accounts for device pixel ratio first
+    const canvasWidth = canvasElement!.width / devicePixelRatio;
+    const canvasHeight = canvasElement!.height / devicePixelRatio;
+
+    // Scale for device pixel ratio
+    canvasContext.scale(devicePixelRatio, devicePixelRatio);
+
+    // Set clipping in CSS pixel coordinates
+    canvasContext.beginPath();
+    canvasContext.rect(0, 0, canvasWidth, canvasHeight);
+    canvasContext.clip();
+
+    // Scale for zoom level (applies on top of device pixel ratio scaling)
     canvasContext.scale(state().scale, state().scale);
 
     drawEdges();
@@ -291,9 +307,24 @@ export default function NetworkGraph(props: Props) {
   }
 
   function drawEdges() {
+    if (!canvasContext) return;
+
+    const devicePixelRatio = window.devicePixelRatio || 1;
+    const canvasWidth = canvasElement!.width / devicePixelRatio;
+    const canvasHeight = canvasElement!.height / devicePixelRatio;
+    const scale = state().scale;
+
+    // Define viewport bounds in world coordinates (accounting for zoom)
+    const padding = 50 / scale; // Add padding relative to the scaled viewport
+    const viewportBounds = {
+      left: -padding,
+      top: -padding,
+      right: canvasWidth / scale + padding,
+      bottom: canvasHeight / scale + padding,
+    };
+
     memoizedNodes().forEach((node) => {
       if (!node.edges) return;
-      if (!canvasContext) return;
 
       node.edges.forEach((edgeTargetNodeId) => {
         const sourceNode = memoizedNodes().find((n) => n.id === node.id);
@@ -307,29 +338,117 @@ export default function NetworkGraph(props: Props) {
         )
           return;
 
-        canvasContext!.beginPath();
-        canvasContext!.moveTo(sourceNode.x, sourceNode.y);
+        // Check if edge intersects viewport bounds for performance culling
+        const edgeIntersectsViewport =
+          (sourceNode.x >= viewportBounds.left &&
+            sourceNode.x <= viewportBounds.right &&
+            sourceNode.y >= viewportBounds.top &&
+            sourceNode.y <= viewportBounds.bottom) ||
+          (targetNode.x >= viewportBounds.left &&
+            targetNode.x <= viewportBounds.right &&
+            targetNode.y >= viewportBounds.top &&
+            targetNode.y <= viewportBounds.bottom) ||
+          // Line-rectangle intersection check for edges that pass through viewport
+          lineIntersectsRect(sourceNode.x, sourceNode.y, targetNode.x, targetNode.y, viewportBounds);
+
+        if (!edgeIntersectsViewport) return;
+
+        const ctx = canvasContext!;
+        ctx.beginPath();
+        ctx.moveTo(sourceNode.x, sourceNode.y);
         if (state().nodeDragging?.id === node.id || state().nodeDragging?.id === edgeTargetNodeId)
-          canvasContext!.strokeStyle = "yellow";
-        else canvasContext!.strokeStyle = "gray";
-        canvasContext!.lineWidth = 1;
-        canvasContext!.lineTo(targetNode.x, targetNode.y);
-        canvasContext!.stroke();
+          ctx.strokeStyle = "yellow";
+        else ctx.strokeStyle = "gray";
+        ctx.lineWidth = 1;
+        ctx.lineTo(targetNode.x, targetNode.y);
+        ctx.stroke();
       });
     });
   }
 
+  // Helper function to check if a line segment intersects a rectangle
+  function lineIntersectsRect(
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number,
+    rect: { left: number; top: number; right: number; bottom: number },
+  ): boolean {
+    // Check if either endpoint is inside the rectangle
+    if (
+      (x1 >= rect.left && x1 <= rect.right && y1 >= rect.top && y1 <= rect.bottom) ||
+      (x2 >= rect.left && x2 <= rect.right && y2 >= rect.top && y2 <= rect.bottom)
+    ) {
+      return true;
+    }
+
+    // Check if line segment intersects any of the rectangle's edges
+    return (
+      lineIntersectsLine(x1, y1, x2, y2, rect.left, rect.top, rect.right, rect.top) || // Top
+      lineIntersectsLine(x1, y1, x2, y2, rect.right, rect.top, rect.right, rect.bottom) || // Right
+      lineIntersectsLine(x1, y1, x2, y2, rect.right, rect.bottom, rect.left, rect.bottom) || // Bottom
+      lineIntersectsLine(x1, y1, x2, y2, rect.left, rect.bottom, rect.left, rect.top)
+    ); // Left
+  }
+
+  // Helper function to check if two line segments intersect
+  function lineIntersectsLine(
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number,
+    x3: number,
+    y3: number,
+    x4: number,
+    y4: number,
+  ): boolean {
+    const denominator = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
+    if (denominator === 0) return false; // Lines are parallel
+
+    const t = ((x1 - x3) * (y3 - y4) - (y1 - y3) * (x3 - x4)) / denominator;
+    const u = -((x1 - x2) * (y1 - y3) - (y1 - y2) * (x1 - x3)) / denominator;
+
+    return t >= 0 && t <= 1 && u >= 0 && u <= 1;
+  }
+
   function drawNodes() {
+    if (!canvasContext) return;
+
+    const devicePixelRatio = window.devicePixelRatio || 1;
+    const canvasWidth = canvasElement!.width / devicePixelRatio;
+    const canvasHeight = canvasElement!.height / devicePixelRatio;
+    const scale = state().scale;
+
+    // Define viewport bounds in world coordinates (accounting for zoom)
+    const padding = (layoutSettings.nodeRadius + 30) / scale; // Account for node radius and text
+    const viewportBounds = {
+      left: -padding,
+      top: -padding,
+      right: canvasWidth / scale + padding,
+      bottom: canvasHeight / scale + padding,
+    };
+
     memoizedNodes().forEach((node) => {
-      if (!canvasContext) return;
       if (node.x === undefined || node.y === undefined) return;
+
+      // Skip nodes that are completely outside the viewport
+      if (
+        node.x < viewportBounds.left ||
+        node.x > viewportBounds.right ||
+        node.y < viewportBounds.top ||
+        node.y > viewportBounds.bottom
+      ) {
+        return;
+      }
+
       if (props.renderNode) return props.renderNode(node, canvasContext!);
 
-      canvasContext.beginPath();
-      canvasContext.fillStyle = "black";
-      canvasContext.arc(node.x, node.y, layoutSettings.nodeRadius, 0, 2 * Math.PI);
-      canvasContext.fill();
-      canvasContext.fillText(node.label, node.x - 15, node.y + 30);
+      const ctx = canvasContext!;
+      ctx.beginPath();
+      ctx.fillStyle = "black";
+      ctx.arc(node.x, node.y, layoutSettings.nodeRadius, 0, 2 * Math.PI);
+      ctx.fill();
+      ctx.fillText(node.label, node.x - 15, node.y + 30);
     });
   }
 
@@ -349,10 +468,7 @@ export default function NetworkGraph(props: Props) {
     canvasElement.width = Math.floor(displayWidth * devicePixelRatio);
     canvasElement.height = Math.floor(displayHeight * devicePixelRatio);
 
-    // Scale the context to account for the pixel ratio
-    if (canvasContext) {
-      canvasContext.scale(devicePixelRatio, devicePixelRatio);
-    }
+    // Note: Device pixel ratio scaling is now handled in drawGraph() to ensure proper clipping
 
     drawGraph();
   }
