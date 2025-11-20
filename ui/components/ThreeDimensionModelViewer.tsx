@@ -64,7 +64,9 @@ export default function ThreeDimensionModelViewer(props: Props) {
   function onContainerElementMount(element: HTMLDivElement) {
     containerRef = element;
 
-    window.addEventListener("resize", onWindowResized);
+    if (typeof window !== "undefined") {
+      window.addEventListener("resize", onWindowResized);
+    }
 
     requestAnimationFrame(() => {
       initThree();
@@ -80,7 +82,9 @@ export default function ThreeDimensionModelViewer(props: Props) {
     if (loader) loader = undefined;
     if (scene) scene = undefined;
     if (camera) camera = undefined;
-    window.removeEventListener("resize", onWindowResized);
+    if (typeof window !== "undefined") {
+      window.removeEventListener("resize", onWindowResized);
+    }
   });
 
   /**
