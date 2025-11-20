@@ -26,6 +26,7 @@ type Props = {
   configureModel?: (model: GLTF) => void;
   configureCamera?: (camera: OrthographicCamera) => void;
   configureControls?: (controls: OrbitControls) => void;
+  autoRotate?: boolean;
 
   class?: string;
   loadingElement?: JSX.Element;
@@ -42,6 +43,7 @@ type Props = {
  * @param props.configureModel - The function to configure the model.
  * @param props.configureCamera - The function to configure the camera.
  * @param props.configureControls - The function to configure the controls.
+ * @param props.autoRotate - Whether to enable auto-rotation. Defaults to true.
  * @param props.class - The class name for the root element.
  * @param props.loadingElement - The loading element to display while the model is loading.
  */
@@ -196,18 +198,27 @@ export default function ThreeDimensionModelViewer(props: Props) {
     if (isLoading()) return;
     if (!controls || !scene || !renderer || !camera) return;
 
-    if (frame !== undefined && frame <= 100) {
-      frame = frame! <= 100 ? frame + 1 : frame;
-      const rotateSpeed = -EasingHelper.easeOutCirc(frame / 120) * Math.PI * 6;
-      const target = new Vector3(-0.5, -1, 0);
-      if (!initialCameraPosition) initialCameraPosition = camera.position.clone();
+    const shouldAutoRotate = props.autoRotate !== false; // Default to true unless explicitly false
 
-      camera.position.y = 10;
-      camera.position.x =
-        initialCameraPosition.x * Math.cos(rotateSpeed) + initialCameraPosition.z * Math.sin(rotateSpeed);
-      camera.position.z =
-        initialCameraPosition.z * Math.cos(rotateSpeed) - initialCameraPosition.x * Math.sin(rotateSpeed);
-      camera.lookAt(target);
+    if (frame !== undefined && frame <= 100) {
+      // Only do initial rotation if autoRotate is enabled
+      if (shouldAutoRotate) {
+        frame = frame! <= 100 ? frame + 1 : frame;
+        const rotateSpeed = -EasingHelper.easeOutCirc(frame / 120) * Math.PI * 6;
+        const target = new Vector3(-0.5, -1, 0);
+        if (!initialCameraPosition) initialCameraPosition = camera.position.clone();
+
+        camera.position.y = 10;
+        camera.position.x =
+          initialCameraPosition.x * Math.cos(rotateSpeed) + initialCameraPosition.z * Math.sin(rotateSpeed);
+        camera.position.z =
+          initialCameraPosition.z * Math.cos(rotateSpeed) - initialCameraPosition.x * Math.sin(rotateSpeed);
+        camera.lookAt(target);
+      } else {
+        // Skip initial animation if autoRotate is disabled
+        frame = undefined;
+        initialCameraPosition = undefined;
+      }
     } else {
       if (frame) frame = undefined;
       if (initialCameraPosition) initialCameraPosition = undefined;
