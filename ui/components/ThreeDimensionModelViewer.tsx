@@ -1,7 +1,15 @@
 import EasingHelper from "@packages/acore-ts/ui/animation/EasingHelper";
 import { mergeCls } from "@packages/acore-ts/ui/ClassHelpers";
-import { createSignal, onCleanup, Show, type JSX } from "solid-js";
-import { AmbientLight, OrthographicCamera, Scene, SRGBColorSpace, Vector3, WebGLRenderer } from "three";
+import { createSignal, onCleanup, Show, createEffect, type JSX } from "solid-js";
+import {
+  AmbientLight,
+  OrthographicCamera,
+  Scene,
+  SRGBColorSpace,
+  Vector3,
+  WebGLRenderer,
+  ACESFilmicToneMapping,
+} from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
 import { GLTFLoader, type GLTF } from "three/examples/jsm/loaders/GLTFLoader.js";
@@ -61,6 +69,37 @@ export default function ThreeDimensionModelViewer(props: Props) {
 
   const [isLoading, setIsLoading] = createSignal(true);
   const [renderElement, setRenderElement] = createSignal<HTMLCanvasElement>();
+
+  // Effect to ensure proper viewport setup after canvas is attached to DOM
+  createEffect(() => {
+    const canvas = renderElement();
+    if (canvas && renderer && containerRef) {
+      // Ensure the canvas has proper dimensions and viewport is set
+      const { clientWidth: width, clientHeight: height } = containerRef;
+
+      // Multiple frames to ensure proper DOM and canvas synchronization
+      requestAnimationFrame(() => {
+        if (renderer && canvas) {
+          // Synchronize canvas dimensions with container
+          const canvasWidth = canvas.width || width * window.devicePixelRatio;
+          const canvasHeight = canvas.height || height * window.devicePixelRatio;
+
+          // Update viewport based on actual canvas drawing surface
+          const drawWidth = canvasWidth / window.devicePixelRatio;
+          const drawHeight = canvasHeight / window.devicePixelRatio;
+
+          renderer.setViewport(0, 0, drawWidth, drawHeight);
+
+          // Force a second frame update to ensure WebGL context is aware
+          requestAnimationFrame(() => {
+            if (renderer) {
+              renderer.setViewport(0, 0, drawWidth, drawHeight);
+            }
+          });
+        }
+      });
+    }
+  });
 
   /**
    * Handles the mounting of the container element.
@@ -125,11 +164,31 @@ export default function ThreeDimensionModelViewer(props: Props) {
     if (!containerRef) throw new Error("Container element is not mounted yet.");
     const { clientWidth: width, clientHeight: height } = containerRef;
 
-    // Renderer
-    renderer = new WebGLRenderer({ antialias: true, alpha: true });
+    // Renderer with enhanced WebGL context configuration
+    renderer = new WebGLRenderer({
+      antialias: true,
+      alpha: true,
+      premultipliedAlpha: false,
+      preserveDrawingBuffer: true,
+      powerPreference: "high-performance",
+    });
+
+    // Configure renderer settings
     renderer.setSize(width, height);
-    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Cap DPR for performance
     renderer.outputColorSpace = SRGBColorSpace;
+    renderer.toneMapping = ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.0;
+
+    // Ensure proper WebGL context state
+    const webglContext = renderer.getContext();
+    if (webglContext) {
+      webglContext.disable(webglContext.SCISSOR_TEST);
+      webglContext.viewport(0, 0, webglContext.drawingBufferWidth, webglContext.drawingBufferHeight);
+    }
+
+    // Set explicit viewport to match canvas dimensions
+    renderer.setViewport(0, 0, width, height);
 
     // Scene
     scene = new Scene();
@@ -178,7 +237,37 @@ export default function ThreeDimensionModelViewer(props: Props) {
     const decoderPath = props.decoderPath;
     dracoLoader.setDecoderPath(decoderPath);
     loader.setDRACOLoader(dracoLoader);
-    setRenderElement(renderer.domElement);
+
+    // Configure canvas for proper sizing and remove wrapper issues
+    const canvas = renderer.domElement;
+    canvas.style.position = "absolute";
+    canvas.style.top = "0";
+    canvas.style.left = "0";
+    canvas.style.width = "100%";
+    canvas.style.height = "100%";
+    canvas.style.zIndex = "0";
+    canvas.style.display = "block";
+
+    // Force WebGL context state initialization to prevent viewport warnings
+    const gl = renderer.getContext();
+    if (gl) {
+      // Ensure clean WebGL state
+      gl.disable(gl.SCISSOR_TEST);
+      gl.disable(gl.STENCIL_TEST);
+      gl.enable(gl.DEPTH_TEST);
+      gl.depthFunc(gl.LEQUAL);
+
+      // Set initial viewport to drawing buffer dimensions
+      gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
+
+      // Clear any potential framebuffer issues
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      gl.clearColor(0, 0, 0, 0);
+      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    }
+
+    // Set the render element - SolidJS will handle DOM attachment
+    setRenderElement(canvas);
   }
 
   /** Loads the 3D model using GLTFLoader. */
@@ -211,14 +300,38 @@ export default function ThreeDimensionModelViewer(props: Props) {
     if (!containerRef || !renderer || !camera) return;
 
     const { clientWidth: width, clientHeight: height } = containerRef;
+    const dpr = Math.min(window.devicePixelRatio, 2);
     const scale = height * 0.005 + 4.8;
     const aspect = width / height;
+
+    // Update camera projection
     camera.left = -scale * aspect;
     camera.right = scale * aspect;
     camera.top = scale;
     camera.bottom = -scale;
     camera.updateProjectionMatrix();
+
+    // Update renderer size with capped DPR
     renderer.setSize(width, height);
+
+    // Force WebGL context state reset to prevent viewport issues
+    const webglContext = renderer.getContext();
+    if (webglContext) {
+      // Disable scissor test which can cause viewport rect issues
+      webglContext.disable(webglContext.SCISSOR_TEST);
+
+      // Ensure viewport matches drawing buffer dimensions
+      webglContext.viewport(0, 0, webglContext.drawingBufferWidth, webglContext.drawingBufferHeight);
+
+      // Clear any potential WebGL state issues
+      webglContext.bindFramebuffer(webglContext.FRAMEBUFFER, null);
+    }
+
+    // Update Three.js viewport to match logical dimensions
+    renderer.setViewport(0, 0, width, height);
+
+    // Force a render pass to ensure context is properly initialized
+    renderer.clear();
   }
 
   let frame: number | undefined = 0;
@@ -285,10 +398,8 @@ export default function ThreeDimensionModelViewer(props: Props) {
         </Show>
       </div>
 
-      {/* Canvas Element - Positioned behind loading element */}
-      <Show when={renderElement()}>
-        <div class="absolute inset-0 z-0">{renderElement()}</div>
-      </Show>
+      {/* Canvas Element - Directly positioned without wrapper */}
+      <Show when={renderElement()}>{renderElement()}</Show>
     </div>
   );
 }
