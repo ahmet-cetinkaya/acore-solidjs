@@ -141,9 +141,8 @@ export default function ThreeDimensionModelViewer(props: Props) {
     if (renderer) {
       try {
         renderer.dispose();
-      } catch (error) {
+      } catch {
         // Ignore disposal errors, DOM may already be cleaned up by SolidJS
-        console.debug("Renderer disposal error (expected during SolidJS cleanup):", error);
       }
     }
 
@@ -234,7 +233,7 @@ export default function ThreeDimensionModelViewer(props: Props) {
     // Loader
     loader = new GLTFLoader();
     const dracoLoader = new DRACOLoader();
-    const decoderPath = props.decoderPath;
+    const { decoderPath } = props;
     dracoLoader.setDecoderPath(decoderPath);
     loader.setDRACOLoader(dracoLoader);
 
@@ -300,7 +299,6 @@ export default function ThreeDimensionModelViewer(props: Props) {
     if (!containerRef || !renderer || !camera) return;
 
     const { clientWidth: width, clientHeight: height } = containerRef;
-    const dpr = Math.min(window.devicePixelRatio, 2);
     const scale = height * 0.005 + 4.8;
     const aspect = width / height;
 

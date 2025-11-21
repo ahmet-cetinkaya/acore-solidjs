@@ -328,7 +328,7 @@ export default function NetworkGraph(props: Props) {
     const devicePixelRatio = window.devicePixelRatio || 1;
     const canvasWidth = canvasElement!.width / devicePixelRatio;
     const canvasHeight = canvasElement!.height / devicePixelRatio;
-    const scale = state().scale;
+    const { scale } = state();
 
     // Define viewport bounds in world coordinates (accounting for zoom)
     const padding = 50 / scale; // Add padding relative to the scaled viewport
@@ -433,7 +433,7 @@ export default function NetworkGraph(props: Props) {
     const devicePixelRatio = window.devicePixelRatio || 1;
     const canvasWidth = canvasElement!.width / devicePixelRatio;
     const canvasHeight = canvasElement!.height / devicePixelRatio;
-    const scale = state().scale;
+    const { scale } = state();
 
     // Define viewport bounds in world coordinates (accounting for zoom)
     const padding = (layoutSettings.nodeRadius + 30) / scale; // Account for node radius and text
@@ -490,7 +490,7 @@ export default function NetworkGraph(props: Props) {
   }
 
   function onMouseDown(event: MouseEvent, node?: Node) {
-    const scale = state().scale;
+    const { scale } = state();
     if (node) handleNodeDraggingOnMouseDown(node, event, scale);
     else handleCanvasPanningOnMouseDown(event);
   }
@@ -511,7 +511,7 @@ export default function NetworkGraph(props: Props) {
   }
 
   function onMouseMove(event: MouseEvent) {
-    const scale = state().scale;
+    const { scale } = state();
     if (state().nodeDragging?.id) handleDraggingOnMouseMove(event, scale);
     else if (state().isPanning) handleCanvasPanningOnMouseMove(event, scale);
   }
@@ -575,7 +575,7 @@ export default function NetworkGraph(props: Props) {
     }
 
     const touch = event.touches[0];
-    const scale = state().scale;
+    const { scale } = state();
     const rect = canvasElement!.getBoundingClientRect();
     const x = (touch.clientX - rect.left) / scale;
     const y = (touch.clientY - rect.top) / scale;
@@ -603,7 +603,7 @@ export default function NetworkGraph(props: Props) {
     }
 
     const touch = event.touches[0];
-    const scale = state().scale;
+    const { scale } = state();
 
     if (state().nodeDragging?.id) {
       const rect = canvasElement!.getBoundingClientRect();
@@ -784,7 +784,7 @@ export default function NetworkGraph(props: Props) {
         ref={onCanvasMount}
         class="absolute inset-8 block size-full"
         onMouseDown={(event) => {
-          const scale = state().scale;
+          const { scale } = state();
           const rect = canvasElement!.getBoundingClientRect();
           const x = (event.clientX - rect.left) / scale;
           const y = (event.clientY - rect.top) / scale;

@@ -153,35 +153,27 @@ export default function Modal(props: Props) {
             (isMaximized() ?? maximizable)
               ? `${0 + (props.maximizeOffset?.top ?? 0)}px`
               : props.position?.top
-                ? props.position.top + "px"
+                ? `${props.position.top}px`
                 : "15%",
           left:
             (isMaximized() ?? maximizable)
               ? `${0 + (props.maximizeOffset?.left ?? 0)}px`
               : props.position?.left
-                ? props.position.left + "px"
+                ? `${props.position.left}px`
                 : "15%",
           right: (isMaximized() ?? maximizable) ? `${0 + (props.maximizeOffset?.right ?? 0)}px` : undefined,
           bottom: (isMaximized() ?? maximizable) ? `${0 + (props.maximizeOffset?.bottom ?? 0)}px` : undefined,
           width:
             (isMaximized() ?? maximizable)
-              ? "calc(100vw - " +
-                (props.maximizeOffset?.left ?? 0) +
-                "px - " +
-                (props.maximizeOffset?.right ?? 0) +
-                "px)"
+              ? `calc(100vw - ${props.maximizeOffset?.left ?? 0}px - ${props.maximizeOffset?.right ?? 0}px)`
               : props.size?.width
-                ? props.size.width + "px"
+                ? `${props.size.width}px`
                 : "70vw",
           height:
             (isMaximized() ?? maximizable)
-              ? "calc(100svh - " +
-                (props.maximizeOffset?.top ?? 0) +
-                "px - " +
-                (props.maximizeOffset?.bottom ?? 0) +
-                "px)"
+              ? `calc(100svh - ${props.maximizeOffset?.top ?? 0}px - ${props.maximizeOffset?.bottom ?? 0}px)`
               : props.size?.height
-                ? props.size.height + "px"
+                ? `${props.size.height}px`
                 : "70svh",
           ...props.style,
         }}
