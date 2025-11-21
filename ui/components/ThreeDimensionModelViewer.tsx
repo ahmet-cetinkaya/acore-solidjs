@@ -27,6 +27,8 @@ type Props = {
   configureCamera?: (camera: OrthographicCamera) => void;
   configureControls?: (controls: OrbitControls) => void;
   autoRotate?: boolean;
+  enableInitialAnimation?: boolean;
+  initializationDelay?: number;
 
   class?: string;
   loadingElement?: JSX.Element;
@@ -44,6 +46,8 @@ type Props = {
  * @param props.configureCamera - The function to configure the camera.
  * @param props.configureControls - The function to configure the controls.
  * @param props.autoRotate - Whether to enable auto-rotation. Defaults to true.
+ * @param props.enableInitialAnimation - Whether to enable the initial rotation animation. Defaults to true.
+ * @param props.initializationDelay - Delay in milliseconds before scene initialization. Defaults to 0.
  * @param props.class - The class name for the root element.
  * @param props.loadingElement - The loading element to display while the model is loading.
  */
@@ -70,17 +74,40 @@ export default function ThreeDimensionModelViewer(props: Props) {
       window.addEventListener("resize", onWindowResized);
     }
 
-    requestAnimationFrame(() => {
-      initThree();
-      loadModel();
-      onWindowResized();
-    });
+    const delay = props.initializationDelay ?? 0;
+
+    if (delay > 0) {
+      // Use setTimeout for longer delays to avoid blocking the main thread
+      setTimeout(() => {
+        requestAnimationFrame(() => {
+          initThree();
+          loadModel();
+          onWindowResized();
+        });
+      }, delay);
+    } else {
+      // For zero or no delay, use requestAnimationFrame immediately
+      requestAnimationFrame(() => {
+        initThree();
+        loadModel();
+        onWindowResized();
+      });
+    }
   }
 
   onCleanup(() => {
     if (controls) controls.dispose();
-    if (renderer && containerRef) containerRef.removeChild(renderer.domElement);
-    if (renderer) renderer.dispose();
+
+    // Dispose renderer first - let renderer.dispose() handle DOM cleanup internally
+    if (renderer) {
+      try {
+        renderer.dispose();
+      } catch (error) {
+        // Ignore disposal errors, DOM may already be cleaned up by SolidJS
+        console.debug("Renderer disposal error (expected during SolidJS cleanup):", error);
+      }
+    }
+
     if (loader) loader = undefined;
     if (scene) scene = undefined;
     if (camera) camera = undefined;
@@ -142,6 +169,9 @@ export default function ThreeDimensionModelViewer(props: Props) {
       controls.target = target;
     }
 
+    // Store the control target for initial animation to respect model configuration
+    initialControlTarget = controls.target.clone();
+
     // Loader
     loader = new GLTFLoader();
     const dracoLoader = new DRACOLoader();
@@ -193,19 +223,23 @@ export default function ThreeDimensionModelViewer(props: Props) {
 
   let frame: number | undefined = 0;
   let initialCameraPosition: Vector3 | undefined;
+  let initialControlTarget: Vector3 | undefined;
   /** Animates the scene. */
   function animate() {
     if (isLoading()) return;
     if (!controls || !scene || !renderer || !camera) return;
 
     const shouldAutoRotate = props.autoRotate !== false; // Default to true unless explicitly false
+    const shouldDoInitialAnimation = props.enableInitialAnimation !== false; // Default to true unless explicitly false
 
     if (frame !== undefined && frame <= 100) {
-      // Only do initial rotation if autoRotate is enabled
-      if (shouldAutoRotate) {
+      // Only do initial rotation if initial animation is enabled, regardless of autoRotate
+      if (shouldDoInitialAnimation) {
         frame = frame! <= 100 ? frame + 1 : frame;
         const rotateSpeed = -EasingHelper.easeOutCirc(frame / 120) * Math.PI * 6;
-        const target = new Vector3(-0.5, -1, 0);
+
+        // Use the control target that was set during configuration
+        const target = initialControlTarget || new Vector3(-0.5, -1, 0);
         if (!initialCameraPosition) initialCameraPosition = camera.position.clone();
 
         camera.position.y = 10;
@@ -215,15 +249,20 @@ export default function ThreeDimensionModelViewer(props: Props) {
           initialCameraPosition.z * Math.cos(rotateSpeed) - initialCameraPosition.x * Math.sin(rotateSpeed);
         camera.lookAt(target);
       } else {
-        // Skip initial animation if autoRotate is disabled
+        // Skip initial animation if disabled
         frame = undefined;
         initialCameraPosition = undefined;
+        initialControlTarget = undefined;
       }
     } else {
       if (frame) frame = undefined;
       if (initialCameraPosition) initialCameraPosition = undefined;
+      if (initialControlTarget) initialControlTarget = undefined;
 
-      controls.update();
+      // Only update controls for auto-rotation if enabled
+      if (shouldAutoRotate) {
+        controls.update();
+      }
     }
 
     renderer.render(scene, camera);
@@ -231,14 +270,25 @@ export default function ThreeDimensionModelViewer(props: Props) {
   }
 
   return (
-    <div ref={(element) => onContainerElementMount(element)} class={mergeCls("size-full", props.class)}>
-      <Show when={isLoading()}>
-        {props.loadingElement || (
-          <span class="flex size-full items-center justify-center text-xs text-gray-500">Loading...</span>
+    <div ref={(element) => onContainerElementMount(element)} class={mergeCls("relative size-full", props.class)}>
+      {/* Loading Element - Always positioned at front of scene stack */}
+      <div
+        class={mergeCls(
+          "absolute inset-0 z-10 flex items-center justify-center transition-opacity duration-200",
+          isLoading() ? "opacity-100" : "pointer-events-none opacity-0",
         )}
-      </Show>
+      >
+        <Show when={isLoading()}>
+          {props.loadingElement || (
+            <span class="flex size-full items-center justify-center text-xs text-gray-500">Loading...</span>
+          )}
+        </Show>
+      </div>
 
-      <Show when={renderElement()}>{renderElement()}</Show>
+      {/* Canvas Element - Positioned behind loading element */}
+      <Show when={renderElement()}>
+        <div class="absolute inset-0 z-0">{renderElement()}</div>
+      </Show>
     </div>
   );
 }
