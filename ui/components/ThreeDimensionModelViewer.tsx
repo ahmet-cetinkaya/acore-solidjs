@@ -9,6 +9,8 @@ import {
   Vector3,
   WebGLRenderer,
   ACESFilmicToneMapping,
+  Box3,
+  Group,
 } from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
@@ -29,7 +31,8 @@ type Props = {
    * @see https://threejs.org/docs/#examples/en/loaders/GLTFLoader
    */
   modelPath: string;
-  modelScale: number;
+  /** Optional scale factor to apply ON TOP of the normalized scale. Defaults to 1. */
+  modelScale?: number;
   configureScene?: (scene: Scene) => void;
   configureModel?: (model: GLTF) => void;
   configureCamera?: (camera: OrthographicCamera) => void;
@@ -37,6 +40,15 @@ type Props = {
   autoRotate?: boolean;
   enableInitialAnimation?: boolean;
   initializationDelay?: number;
+
+  /**
+   * Minimum horizontal scale (in world units) to ensure visibility on narrow screens. If the calculated horizontal
+   * frustum width is smaller than this, the camera zoom will be adjusted.
+   */
+  minHorizontalScale?: number;
+
+  /** Target point for the camera to look at. Defaults to (0, 0, 0). */
+  cameraTarget?: Vector3;
 
   class?: string;
   loadingElement?: JSX.Element;
@@ -46,18 +58,6 @@ type Props = {
  * ThreeDimensionModelViewer component to display a 3D model using Three.js.
  *
  * @param props - The component properties.
- * @param props.decoderPath - The path to the Draco decoder.
- * @param props.modelPath - The path to the 3D model.
- * @param props.modelScale - The scale of the 3D model.
- * @param props.configureScene - The function to configure the scene.
- * @param props.configureModel - The function to configure the model.
- * @param props.configureCamera - The function to configure the camera.
- * @param props.configureControls - The function to configure the controls.
- * @param props.autoRotate - Whether to enable auto-rotation. Defaults to true.
- * @param props.enableInitialAnimation - Whether to enable the initial rotation animation. Defaults to true.
- * @param props.initializationDelay - Delay in milliseconds before scene initialization. Defaults to 0.
- * @param props.class - The class name for the root element.
- * @param props.loadingElement - The loading element to display while the model is loading.
  */
 export default function ThreeDimensionModelViewer(props: Props) {
   let containerRef: HTMLDivElement;
@@ -66,40 +66,14 @@ export default function ThreeDimensionModelViewer(props: Props) {
   let scene: Scene | undefined;
   let controls: OrbitControls | undefined;
   let loader: GLTFLoader | undefined;
+  let contentGroup: Group | undefined;
 
   const [isLoading, setIsLoading] = createSignal(true);
   const [renderElement, setRenderElement] = createSignal<HTMLCanvasElement>();
 
-  // Effect to ensure proper viewport setup after canvas is attached to DOM
-  createEffect(() => {
-    const canvas = renderElement();
-    if (canvas && renderer && containerRef) {
-      // Ensure the canvas has proper dimensions and viewport is set
-      const { clientWidth: width, clientHeight: height } = containerRef;
-
-      // Multiple frames to ensure proper DOM and canvas synchronization
-      requestAnimationFrame(() => {
-        if (renderer && canvas) {
-          // Synchronize canvas dimensions with container
-          const canvasWidth = canvas.width || width * window.devicePixelRatio;
-          const canvasHeight = canvas.height || height * window.devicePixelRatio;
-
-          // Update viewport based on actual canvas drawing surface
-          const drawWidth = canvasWidth / window.devicePixelRatio;
-          const drawHeight = canvasHeight / window.devicePixelRatio;
-
-          renderer.setViewport(0, 0, drawWidth, drawHeight);
-
-          // Force a second frame update to ensure WebGL context is aware
-          requestAnimationFrame(() => {
-            if (renderer) {
-              renderer.setViewport(0, 0, drawWidth, drawHeight);
-            }
-          });
-        }
-      });
-    }
-  });
+  // Constants for normalization
+  const TARGET_SIZE = 6; // Standard size for all models
+  const CAMERA_FRUSTUM_SIZE = 10; // Vertical size of the view
 
   /**
    * Handles the mounting of the container element.
@@ -149,6 +123,7 @@ export default function ThreeDimensionModelViewer(props: Props) {
     if (loader) loader = undefined;
     if (scene) scene = undefined;
     if (camera) camera = undefined;
+    if (contentGroup) contentGroup = undefined;
     if (typeof window !== "undefined") {
       window.removeEventListener("resize", onWindowResized);
     }
@@ -178,28 +153,32 @@ export default function ThreeDimensionModelViewer(props: Props) {
     renderer.outputColorSpace = SRGBColorSpace;
     renderer.toneMapping = ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.0;
-
-    // Ensure proper WebGL context state
-    const webglContext = renderer.getContext();
-    if (webglContext) {
-      webglContext.disable(webglContext.SCISSOR_TEST);
-      webglContext.viewport(0, 0, webglContext.drawingBufferWidth, webglContext.drawingBufferHeight);
-    }
-
-    // Set explicit viewport to match canvas dimensions
-    renderer.setViewport(0, 0, width, height);
+    renderer.setClearColor(0, 0);
 
     // Scene
     scene = new Scene();
 
     // Camera
-    const scale = height * 0.005 + 4.8;
+    // Use fixed vertical size, horizontal size depends on aspect ratio
     const aspect = width / height;
-    camera = new OrthographicCamera(-scale * aspect, scale * aspect, scale, -scale, 0.01, 50000);
-    const target = new Vector3(-0.5, -1, 0);
+    const frustumSize = CAMERA_FRUSTUM_SIZE;
+
+    camera = new OrthographicCamera(
+      (-frustumSize * aspect) / 2,
+      (frustumSize * aspect) / 2,
+      frustumSize / 2,
+      -frustumSize / 2,
+      0.01,
+      50000,
+    );
+
+    const target = props.cameraTarget || new Vector3(0, 0, 0);
+
     if (props.configureCamera) props.configureCamera(camera);
     else {
+      // Standard isometric-ish view
       camera.position.set(20 * Math.sin(0.2 * Math.PI), 10, 50 * Math.cos(0.2 * Math.PI));
+
       camera.lookAt(target);
     }
 
@@ -247,24 +226,6 @@ export default function ThreeDimensionModelViewer(props: Props) {
     canvas.style.zIndex = "0";
     canvas.style.display = "block";
 
-    // Force WebGL context state initialization to prevent viewport warnings
-    const gl = renderer.getContext();
-    if (gl) {
-      // Ensure clean WebGL state
-      gl.disable(gl.SCISSOR_TEST);
-      gl.disable(gl.STENCIL_TEST);
-      gl.enable(gl.DEPTH_TEST);
-      gl.depthFunc(gl.LEQUAL);
-
-      // Set initial viewport to drawing buffer dimensions
-      gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
-
-      // Clear any potential framebuffer issues
-      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-      gl.clearColor(0, 0, 0, 0);
-      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    }
-
     // Set the render element - SolidJS will handle DOM attachment
     setRenderElement(canvas);
   }
@@ -275,14 +236,40 @@ export default function ThreeDimensionModelViewer(props: Props) {
       props.modelPath,
       (gltf: GLTF) => {
         if (props.configureModel) props.configureModel(gltf);
-        else {
-          gltf.scene.position.y = 0;
-          gltf.scene.position.x = 0;
+
+        // Normalization Logic
+        contentGroup = new Group();
+        scene?.add(contentGroup);
+        contentGroup.add(gltf.scene);
+
+        // Ensure transforms are up to date before calculating bounding box
+        gltf.scene.updateMatrixWorld(true);
+
+        // Calculate bounding box
+        const box = new Box3().setFromObject(gltf.scene);
+        const size = new Vector3();
+        box.getSize(size);
+        const center = new Vector3();
+        box.getCenter(center);
+
+        // Center the model
+        gltf.scene.position.sub(center);
+
+        // Scale to fit target size
+        const maxDim = Math.max(size.x, size.y, size.z);
+        const scale = TARGET_SIZE / maxDim;
+
+        // Apply base normalization scale
+        contentGroup.scale.set(scale, scale, scale);
+
+        // Apply optional prop scale on top
+        if (props.modelScale) {
+          contentGroup.scale.multiplyScalar(props.modelScale);
         }
+
         gltf.scene.receiveShadow = true;
         gltf.scene.castShadow = true;
-        gltf.scene.scale.set(props.modelScale, props.modelScale, props.modelScale);
-        scene?.add(gltf.scene);
+
         setIsLoading(false);
         animate();
       },
@@ -299,34 +286,73 @@ export default function ThreeDimensionModelViewer(props: Props) {
     if (!containerRef || !renderer || !camera) return;
 
     const { clientWidth: width, clientHeight: height } = containerRef;
-    const scale = height * 0.005 + 4.8;
     const aspect = width / height;
+    const frustumSize = CAMERA_FRUSTUM_SIZE;
 
     // Update camera projection
-    camera.left = -scale * aspect;
-    camera.right = scale * aspect;
-    camera.top = scale;
-    camera.bottom = -scale;
+    let halfWidth = (frustumSize * aspect) / 2;
+    const halfHeight = frustumSize / 2;
+
+    // Check for minimum horizontal scale
+    if (props.minHorizontalScale) {
+      const currentWidth = halfWidth * 2;
+      if (currentWidth < props.minHorizontalScale) {
+        // If viewport is too narrow, we need to zoom out (increase frustum size)
+        // to maintain the minimum horizontal scale
+        const requiredFrustumSize = props.minHorizontalScale / aspect;
+        // We adjust the camera zoom to achieve this effect without changing the frustum calculation logic too much
+        // Or simpler: just override the left/right planes
+        halfWidth = props.minHorizontalScale / 2;
+        // Note: This might distort aspect ratio if we don't adjust top/bottom too.
+        // Correct approach for Orthographic camera to maintain aspect ratio but ensure min width:
+        // If we increase width, we must increase height to keep aspect ratio,
+        // OR we accept that we see more vertical content.
+        // Let's stick to standard behavior:
+        // If width < min, we set width = min. Height = width / aspect.
+
+        // Actually, for orthographic camera:
+        // left/right/top/bottom define the view volume.
+        // If we want to ensure X width, we set left=-X/2, right=X/2.
+        // To keep aspect ratio correct, top/bottom must be derived from this width and aspect ratio.
+        // top = width / aspect / 2
+
+        // BUT, we usually want fixed vertical height (CAMERA_FRUSTUM_SIZE).
+        // So we have a conflict: Fixed Height vs Min Width.
+        // Strategy: Use the larger of the two requirements.
+        // 1. Height-based width: height * aspect
+        // 2. Min width: props.minHorizontalScale
+
+        const heightBasedWidth = frustumSize * aspect;
+
+        if (heightBasedWidth < props.minHorizontalScale) {
+          // We need to be wider.
+          halfWidth = props.minHorizontalScale / 2;
+          // To maintain aspect ratio, we must increase height too?
+          // No, in Three.js OrthographicCamera, the projection matrix maps the defined box to the viewport.
+          // If the box aspect ratio doesn't match the viewport aspect ratio, the image is stretched.
+          // So we MUST ensure (right-left)/(top-bottom) == width/height (aspect).
+
+          // So if we force width to be minHorizontalScale, we must set height to minHorizontalScale / aspect.
+          const newHeight = props.minHorizontalScale / aspect;
+          camera.top = newHeight / 2;
+          camera.bottom = -newHeight / 2;
+        } else {
+          camera.top = halfHeight;
+          camera.bottom = -halfHeight;
+        }
+      }
+    } else {
+      camera.top = halfHeight;
+      camera.bottom = -halfHeight;
+    }
+
+    camera.left = -halfWidth;
+    camera.right = halfWidth;
+
     camera.updateProjectionMatrix();
 
     // Update renderer size with capped DPR
     renderer.setSize(width, height);
-
-    // Force WebGL context state reset to prevent viewport issues
-    const webglContext = renderer.getContext();
-    if (webglContext) {
-      // Disable scissor test which can cause viewport rect issues
-      webglContext.disable(webglContext.SCISSOR_TEST);
-
-      // Ensure viewport matches drawing buffer dimensions
-      webglContext.viewport(0, 0, webglContext.drawingBufferWidth, webglContext.drawingBufferHeight);
-
-      // Clear any potential WebGL state issues
-      webglContext.bindFramebuffer(webglContext.FRAMEBUFFER, null);
-    }
-
-    // Update Three.js viewport to match logical dimensions
-    renderer.setViewport(0, 0, width, height);
 
     // Force a render pass to ensure context is properly initialized
     renderer.clear();
@@ -350,10 +376,17 @@ export default function ThreeDimensionModelViewer(props: Props) {
         const rotateSpeed = -EasingHelper.easeOutCirc(frame / 120) * Math.PI * 6;
 
         // Use the control target that was set during configuration
-        const target = initialControlTarget || new Vector3(-0.5, -1, 0);
+        const target = initialControlTarget || new Vector3(0, 0, 0);
         if (!initialCameraPosition) initialCameraPosition = camera.position.clone();
 
-        camera.position.y = 10;
+        // Simple orbit animation
+        const radius = initialCameraPosition.length();
+        // We want to rotate around Y axis
+
+        // Re-calculate based on initial position relative to target
+        // This is a bit complex to generalize, so let's keep the simple circular orbit for now
+        // assuming standard isometric view
+
         camera.position.x =
           initialCameraPosition.x * Math.cos(rotateSpeed) + initialCameraPosition.z * Math.sin(rotateSpeed);
         camera.position.z =
