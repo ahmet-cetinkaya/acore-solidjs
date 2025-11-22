@@ -83,9 +83,14 @@ export default function ThreeDimensionModelViewer(props: Props) {
   function onContainerElementMount(element: HTMLDivElement) {
     containerRef = element;
 
-    if (typeof window !== "undefined") {
-      window.addEventListener("resize", onWindowResized);
-    }
+    const resizeObserver = new ResizeObserver(() => {
+      onWindowResized();
+    });
+    resizeObserver.observe(element);
+
+    onCleanup(() => {
+      resizeObserver.disconnect();
+    });
 
     const delay = props.initializationDelay ?? 0;
 
@@ -124,9 +129,6 @@ export default function ThreeDimensionModelViewer(props: Props) {
     if (scene) scene = undefined;
     if (camera) camera = undefined;
     if (contentGroup) contentGroup = undefined;
-    if (typeof window !== "undefined") {
-      window.removeEventListener("resize", onWindowResized);
-    }
   });
 
   /**
@@ -355,7 +357,9 @@ export default function ThreeDimensionModelViewer(props: Props) {
     renderer.setSize(width, height);
 
     // Force a render pass to ensure context is properly initialized
-    renderer.clear();
+    if (scene && camera) {
+      renderer.render(scene, camera);
+    }
   }
 
   let frame: number | undefined = 0;
