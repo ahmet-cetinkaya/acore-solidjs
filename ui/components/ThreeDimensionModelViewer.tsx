@@ -1,6 +1,6 @@
 import EasingHelper from "@packages/acore-ts/ui/animation/EasingHelper";
 import { mergeCls } from "@packages/acore-ts/ui/ClassHelpers";
-import { createSignal, onCleanup, Show, createEffect, type JSX } from "solid-js";
+import { createSignal, onCleanup, Show, type JSX } from "solid-js";
 import {
   AmbientLight,
   OrthographicCamera,
@@ -301,7 +301,6 @@ export default function ThreeDimensionModelViewer(props: Props) {
       if (currentWidth < props.minHorizontalScale) {
         // If viewport is too narrow, we need to zoom out (increase frustum size)
         // to maintain the minimum horizontal scale
-        const requiredFrustumSize = props.minHorizontalScale / aspect;
         // We adjust the camera zoom to achieve this effect without changing the frustum calculation logic too much
         // Or simpler: just override the left/right planes
         halfWidth = props.minHorizontalScale / 2;
@@ -384,7 +383,6 @@ export default function ThreeDimensionModelViewer(props: Props) {
         if (!initialCameraPosition) initialCameraPosition = camera.position.clone();
 
         // Simple orbit animation
-        const radius = initialCameraPosition.length();
         // We want to rotate around Y axis
 
         // Re-calculate based on initial position relative to target

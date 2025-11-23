@@ -29,6 +29,7 @@ export default function SvgIcon(props: Props) {
 
   const svgContent = createMemo(() => {
     if (!props.svg) {
+      //eslint-disable-next-line no-console
       console.warn(`SvgIcon: svg prop is undefined for alt="${props.alt}"`);
       return ""; // Return empty SVG content as fallback
     }
