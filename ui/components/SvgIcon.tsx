@@ -23,13 +23,26 @@ type Props = {
  */
 export default function SvgIcon(props: Props) {
   const getFilledSvg = createMemo(() => {
+    if (!props.svg) return "";
     return props.svg.replace(/fill=".*?"/g, `fill="${props.fillColor}"`);
   });
+
+  const svgContent = createMemo(() => {
+    if (!props.svg) {
+      console.warn(`SvgIcon: svg prop is undefined for alt="${props.alt}"`);
+      return ""; // Return empty SVG content as fallback
+    }
+    return props.fillColor ? getFilledSvg() : props.svg;
+  });
+
+  if (!props.svg) {
+    return null; // Don't render anything if svg is undefined
+  }
 
   return (
     <svg
       onClick={props.onClick}
-      innerHTML={props.fillColor ? getFilledSvg() : props.svg}
+      innerHTML={svgContent()}
       class={mergeCls("select-none", props.class, {
         "animate-spin": props.isSpin ?? false,
       })}
