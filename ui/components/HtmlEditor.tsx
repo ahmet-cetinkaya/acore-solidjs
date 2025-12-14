@@ -62,7 +62,7 @@ export default function HtmlEditor(props: Props) {
 
   return (
     <section class={mergeCls(props.class)}>
-      <header class={mergeCls("border-surface-300 mb-2 flex border-b p-2", props.toolbarClass)}>
+      <header class={mergeCls("mb-2 flex border-b p-2", props.toolbarClass)}>
         <Index each={toolbarButtons()}>
           {(button) => (
             <ToolbarButton

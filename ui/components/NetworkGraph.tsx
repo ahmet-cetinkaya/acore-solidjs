@@ -771,7 +771,7 @@ export default function NetworkGraph(props: Props) {
         onClick={() => centerNodesOnCanvas()}
         aria-label={ariaLabel}
         title={centerButtonTitle}
-        class="text-surface-600 hover:bg-surface-100 absolute right-8 top-8 z-20 flex size-8 items-center justify-center rounded-lg"
+        class="absolute right-8 top-8 z-20 flex size-8 items-center justify-center rounded-lg"
       >
         <SvgIcon svg={IconSvgs.center} alt="Center graph" class="size-6" />
       </button>
