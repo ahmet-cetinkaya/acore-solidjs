@@ -29,14 +29,19 @@ This section explains how to get your project up and running.
 ### 🛠️ Installation
 
 1. Clone the repository:
+
    ```bash
    git clone https://github.com/ahmet-cetinkaya/acore-solidjs.git
    ```
+
 2. Navigate into the project directory:
+
    ```bash
    cd acore-solidjs
    ```
+
 3. Install the dependencies:
+
    ```bash
    bun install
    ```
@@ -46,18 +51,25 @@ This section explains how to get your project up and running.
 To add this repository as a submodule to another project, follow these steps:
 
 1. Navigate to your project directory:
+
    ```bash
    cd your-project-directory
    ```
+
 2. Add the submodule:
+
    ```bash
    git submodule add https://github.com/ahmet-cetinkaya/acore-solidjs.git path/to/submodule
    ```
+
 3. Initialize and update the submodule:
+
    ```bash
    git submodule update --init --recursive
    ```
+
 4. Navigate into the submodule directory and install dependencies:
+
    ```bash
    cd path/to/submodule
    bun install
