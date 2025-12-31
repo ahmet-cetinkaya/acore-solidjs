@@ -56,6 +56,7 @@ export default function SvgIcon(props: Props) {
         "animate-spin": props.isSpin ?? false,
       })}
       style={props.style}
+      role="img"
       aria-label={props.alt}
     />
   );
