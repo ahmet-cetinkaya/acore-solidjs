@@ -37,15 +37,24 @@ export default function SvgIcon(props: Props) {
       return props.svg;
     }
 
-    // Default to currentColor if no fillColor is provided
-    const fill = props.fillColor || "currentColor";
+    // If fillColor is provided, replace "currentColor" with the provided color
+    // but preserve other hardcoded fills (like brand colors)
+    if (props.fillColor) {
+      let cleaned = props.svg.replace(/fill="currentColor"/g, `fill="${props.fillColor}"`);
 
-    // 1. Remove hardcoded fills except "none"
-    // 2. Ensure root <svg> has fill="currentColor" (or props.fillColor)
-    let cleaned = props.svg.replace(/fill="(?!none).*?"/g, "");
+      // Add fill to root svg if it doesn't have one
+      if (!cleaned.match(/<svg[^>]*fill=/)) {
+        cleaned = cleaned.replace("<svg", `<svg fill="${props.fillColor}"`);
+      }
+
+      return cleaned;
+    }
+
+    // Default behavior: Remove all hardcoded fills except "none" and use currentColor
+    let cleaned = props.svg.replace(/fill="(?!none|currentColor).*?"/g, "");
 
     if (cleaned.startsWith("<svg")) {
-      cleaned = cleaned.replace("<svg", `<svg fill="${fill}"`);
+      cleaned = cleaned.replace("<svg", `<svg fill="currentColor"`);
     }
 
     return cleaned;
