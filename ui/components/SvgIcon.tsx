@@ -8,6 +8,7 @@ type Props = {
   onClick?: () => void;
   class?: string;
   fillColor?: string;
+  preserveFill?: boolean;
   style?: any;
 };
 
@@ -21,6 +22,7 @@ type Props = {
  * @param props.onClick - The click event handler.
  * @param props.class - The class name for the SVG element.
  * @param props.fillColor - The fill color for the SVG.
+ * @param props.preserveFill - If true, preserves original SVG fill colors instead of replacing with currentColor.
  */
 export default function SvgIcon(props: Props) {
   const processedSvg = createMemo(() => {
@@ -28,6 +30,11 @@ export default function SvgIcon(props: Props) {
       //eslint-disable-next-line no-console
       console.warn(`SvgIcon: svg prop is undefined for alt="${props.alt}"`);
       return "";
+    }
+
+    // If preserveFill is true, return the SVG as-is without modifying fills
+    if (props.preserveFill) {
+      return props.svg;
     }
 
     // Default to currentColor if no fillColor is provided
