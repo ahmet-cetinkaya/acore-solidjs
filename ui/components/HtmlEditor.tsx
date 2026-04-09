@@ -1,5 +1,5 @@
-import { mergeCls } from "@packages/acore-ts/ui/ClassHelpers";
-import HtmlEditorManager, { type FormatType } from "@packages/acore-ts/ui/HtmlEditorManager";
+import { mergeCls } from "acore-ts/ui/ClassHelpers";
+import HtmlEditorManager, { type FormatType } from "acore-ts/ui/HtmlEditorManager";
 import { createMemo, Index, onCleanup, Show, type JSX } from "solid-js";
 import IconSvgs from "../constants/IconSvgs";
 import Icon from "./SvgIcon";

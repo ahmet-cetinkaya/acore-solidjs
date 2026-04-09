@@ -1,4 +1,4 @@
-import { mergeCls } from "@packages/acore-ts/ui/ClassHelpers";
+import { mergeCls } from "acore-ts/ui/ClassHelpers";
 import { createEffect, createMemo, createSignal, onCleanup, Show } from "solid-js";
 import type { JSX } from "solid-js/jsx-runtime";
 

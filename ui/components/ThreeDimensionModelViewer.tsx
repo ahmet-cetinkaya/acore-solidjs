@@ -1,5 +1,5 @@
-import EasingHelper from "@packages/acore-ts/ui/animation/EasingHelper";
-import { mergeCls } from "@packages/acore-ts/ui/ClassHelpers";
+import EasingHelper from "acore-ts/ui/animation/EasingHelper";
+import { mergeCls } from "acore-ts/ui/ClassHelpers";
 import { createSignal, onCleanup, Show, type JSX } from "solid-js";
 import {
   AmbientLight,
