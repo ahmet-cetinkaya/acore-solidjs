@@ -9,7 +9,7 @@ type Props = {
   class?: string;
   fillColor?: string;
   preserveFill?: boolean;
-  style?: any;
+  style?: Record<string, string>;
 };
 
 /**
