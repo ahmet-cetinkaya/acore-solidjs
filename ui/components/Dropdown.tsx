@@ -9,13 +9,22 @@ export type BaseDropdownItem = {
   items?: BaseDropdownItem[];
 };
 
+type DropdownStyles = {
+  wrapper?: string;
+  button?: string;
+  menu?: string;
+  menuContainer?: string;
+  menuItem?: string;
+  categoryHeader?: string;
+};
+
 type Props = {
+  id: string;
   menuItems: BaseDropdownItem[];
   children: JSX.Element;
-  buttonClass?: string;
-  ariaLabel: string;
   renderIcon?: (icon: string) => JSX.Element;
-  id: string;
+  ariaLabel: string;
+  styles?: DropdownStyles;
 };
 
 export default function Dropdown(props: Props) {
@@ -37,17 +46,17 @@ export default function Dropdown(props: Props) {
   }
 
   return (
-    <div id={props.id} class="ac-dropdown relative inline-block text-left">
-      <div class="flex size-full items-center justify-center">
-        <button
-          type="button"
-          onClick={onToggleDropdown}
-          class={mergeCls("rounded px-4 py-2 text-white", props.buttonClass)}
-          aria-label={props.ariaLabel}
-        >
-          {props.children}
-        </button>
-      </div>
+    <div id={props.id} class={mergeCls("relative", props.styles?.wrapper)}>
+      <button
+        type="button"
+        onClick={onToggleDropdown}
+        class={mergeCls("cursor-pointer", props.styles?.button)}
+        aria-label={props.ariaLabel}
+        aria-expanded={isOpen()}
+        aria-haspopup="true"
+      >
+        {props.children}
+      </button>
 
       <Show when={isOpen()}>
         <Menu />
@@ -57,21 +66,21 @@ export default function Dropdown(props: Props) {
 
   function Menu() {
     return (
-      <div class="shadow-secondary absolute left-0 z-50 mt-2 w-56 origin-top-right rounded-md shadow-lg ring-1 ring-black ring-opacity-5">
-        <div class="py-1" role="menu" aria-orientation="vertical" aria-labelledby="options-menu">
+      <div class={mergeCls(props.styles?.menu)}>
+        <div class={mergeCls(props.styles?.menuContainer)} role="menu" aria-orientation="vertical" aria-labelledby="options-menu">
           <Index each={props.menuItems}>
             {(item) => {
               if (item().items)
                 return (
                   <>
-                    <h1 class="border-b px-4 py-2 text-xs text-gray-300">{item().text}</h1>
+                    <h1 class={mergeCls(props.styles?.categoryHeader)}>{item().text}</h1>
                     <Index each={item().items}>
-                      {(subitem) => <MenuItem item={subitem()} renderIcon={props.renderIcon} />}
+                      {(subitem) => <MenuItem item={subitem()} renderIcon={props.renderIcon} styles={props.styles} />}
                     </Index>
                   </>
                 );
 
-              return <MenuItem item={item()} renderIcon={props.renderIcon} />;
+              return <MenuItem item={item()} renderIcon={props.renderIcon} styles={props.styles} />;
             }}
           </Index>
         </div>
@@ -79,9 +88,12 @@ export default function Dropdown(props: Props) {
     );
   }
 
-  function MenuItem(props: { item: BaseDropdownItem; renderIcon?: (icon: string) => JSX.Element }) {
-    const classes =
-      "block px-4 py-2 text-sm text-gray-200 hover:bg-gray-100 hover:text-gray-900 w-full text-start border-none shadow-none cursor-pointer rounded transition-colors duration-200 ease-in-out";
+  function MenuItem(props: {
+    item: BaseDropdownItem;
+    renderIcon?: (icon: string) => JSX.Element;
+    styles?: DropdownStyles;
+  }) {
+    const classes = mergeCls("cursor-pointer", props.styles?.menuItem);
 
     function onClick() {
       setIsOpen(false);
@@ -90,13 +102,13 @@ export default function Dropdown(props: Props) {
 
     if (props.item.href)
       return (
-        <a href={props.item.href} onClick={onClick} class={classes} aria-label={props.item.text}>
+        <a href={props.item.href} onClick={onClick} class={classes} aria-label={props.item.text} role="menuitem">
           {renderMenuItem(props.item)}
         </a>
       );
     else
       return (
-        <button onClick={onClick} class={classes} aria-label={props.item.text}>
+        <button onClick={onClick} class={classes} aria-label={props.item.text} role="menuitem">
           {renderMenuItem(props.item)}
         </button>
       );
