@@ -1,15 +1,19 @@
 import { mergeCls } from "acore-ts/ui/ClassHelpers";
 import { createMemo } from "solid-js";
 
+export type SvgIconStyles = {
+  wrapper?: string;
+};
+
 type Props = {
   svg: string;
   alt: string;
   isSpin?: boolean;
   onClick?: () => void;
-  class?: string;
   fillColor?: string;
   preserveFill?: boolean;
   style?: Record<string, string>;
+  styles?: SvgIconStyles;
 };
 
 /**
@@ -68,7 +72,7 @@ export default function SvgIcon(props: Props) {
     <svg
       onClick={props.onClick}
       innerHTML={processedSvg()}
-      class={mergeCls("select-none", props.class, {
+      class={mergeCls("select-none", props.styles?.wrapper, {
         "animate-spin": props.isSpin ?? false,
       })}
       style={props.style}

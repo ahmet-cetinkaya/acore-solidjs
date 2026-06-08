@@ -2,13 +2,19 @@ import { mergeCls } from "acore-ts/ui/ClassHelpers";
 import { createEffect, createMemo, createSignal, onCleanup, Show } from "solid-js";
 import type { JSX } from "solid-js/jsx-runtime";
 
+export type LessViewContentStyles = {
+  wrapper?: string;
+  content?: string;
+  gradientFade?: string;
+  showMoreButton?: string;
+};
+
 type Props = {
   children: JSX.Element;
-  containerClass?: string;
   heightLimit?: number;
   customButtonComponent?: (props: { onClick: () => void; children: JSX.Element }) => JSX.Element;
-  hidingClass?: string;
   showMoreLabel: string;
+  styles?: LessViewContentStyles;
 };
 
 const DEFAULT_HEIGHT_LIMIT = 200;
@@ -57,12 +63,16 @@ export default function LessViewContent(props: Props) {
   }
 
   return (
-    <div class={mergeCls("relative", props.containerClass)}>
+    <div class={mergeCls("relative", props.styles?.wrapper)}>
       <div
         ref={onContentMount}
-        class={mergeCls("relative overflow-hidden transition-all duration-500 ease-in-out", {
-          "max-h-full": expanded(),
-        })}
+        class={mergeCls(
+          "relative overflow-hidden transition-all duration-500 ease-in-out",
+          {
+            "max-h-full": expanded(),
+          },
+          props.styles?.content,
+        )}
         style={maxHeightStyle()}
       >
         {props.children}
@@ -71,7 +81,7 @@ export default function LessViewContent(props: Props) {
           <div
             class={mergeCls(
               "pointer-events-none absolute bottom-0 left-0 h-16 w-full bg-gradient-to-t from-white to-transparent",
-              props.hidingClass,
+              props.styles?.gradientFade,
             )}
           />
         </Show>
@@ -81,7 +91,10 @@ export default function LessViewContent(props: Props) {
         <Show
           when={props.customButtonComponent}
           fallback={
-            <button onClick={() => setExpanded(true)} class="py-2 text-sm">
+            <button
+              onClick={() => setExpanded(true)}
+              class={mergeCls("cursor-pointer py-2 text-sm", props.styles?.showMoreButton)}
+            >
               {props.showMoreLabel}
             </button>
           }

@@ -12,10 +12,18 @@ export type Node = {
   edges?: string[];
 };
 
+export type NetworkGraphStyles = {
+  wrapper?: string;
+  canvas?: string;
+  centerButton?: string;
+  centerButtonIcon?: string;
+};
+
 type Props = {
   nodes: Node[];
   renderNode?: (node: Node, context: CanvasRenderingContext2D) => void;
   centerButtonTitle?: string;
+  styles?: NetworkGraphStyles;
 };
 
 type State = {
@@ -771,18 +779,24 @@ export default function NetworkGraph(props: Props) {
         onClick={() => centerNodesOnCanvas()}
         aria-label={ariaLabel}
         title={centerButtonTitle}
-        class="absolute right-8 top-8 z-20 flex size-8 items-center justify-center rounded-lg"
+        class={
+          props.styles?.centerButton || "absolute right-8 top-8 z-20 flex size-8 items-center justify-center rounded-lg"
+        }
       >
-        <SvgIcon svg={IconSvgs.center} alt="Center graph" class="size-6" />
+        <SvgIcon
+          svg={IconSvgs.center}
+          alt="Center graph"
+          styles={{ wrapper: props.styles?.centerButtonIcon || "size-6" }}
+        />
       </button>
     );
   }
 
   return (
-    <div ref={containerElement} class="relative size-full p-8">
+    <div ref={containerElement} class={props.styles?.wrapper || "relative size-full p-8"}>
       <canvas
         ref={onCanvasMount}
-        class="absolute inset-8 block size-full"
+        class={props.styles?.canvas || "absolute inset-8 block size-full"}
         onMouseDown={(event) => {
           const { scale } = state();
           const rect = canvasElement!.getBoundingClientRect();

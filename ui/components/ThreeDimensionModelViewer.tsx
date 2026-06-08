@@ -16,6 +16,12 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
 import { GLTFLoader, type GLTF } from "three/examples/jsm/loaders/GLTFLoader.js";
 
+export type ThreeDViewerStyles = {
+  wrapper?: string;
+  loadingOverlay?: string;
+  loadingText?: string;
+};
+
 type Props = {
   /**
    * The path to the Draco decoder. This is required for loading models that use Draco compression. Path should be
@@ -50,7 +56,7 @@ type Props = {
   /** Target point for the camera to look at. Defaults to (0, 0, 0). */
   cameraTarget?: Vector3;
 
-  class?: string;
+  styles?: ThreeDViewerStyles;
   loadingElement?: JSX.Element;
 };
 
@@ -416,17 +422,23 @@ export default function ThreeDimensionModelViewer(props: Props) {
   }
 
   return (
-    <div ref={(element) => onContainerElementMount(element)} class={mergeCls("relative size-full", props.class)}>
+    <div
+      ref={(element) => onContainerElementMount(element)}
+      class={mergeCls("relative size-full", props.styles?.wrapper)}
+    >
       {/* Loading Element - Always positioned at front of scene stack */}
       <div
         class={mergeCls(
           "absolute inset-0 z-10 flex items-center justify-center transition-opacity duration-200",
           isLoading() ? "opacity-100" : "pointer-events-none opacity-0",
+          props.styles?.loadingOverlay,
         )}
       >
         <Show when={isLoading()}>
           {props.loadingElement || (
-            <span class="flex size-full items-center justify-center text-xs text-gray-500">Loading...</span>
+            <span class={mergeCls("flex items-center justify-center text-xs", props.styles?.loadingText)}>
+              Loading...
+            </span>
           )}
         </Show>
       </div>

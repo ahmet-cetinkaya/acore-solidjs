@@ -4,20 +4,29 @@ import type { Offset } from "acore-ts/ui/models/Offset";
 import Position from "acore-ts/ui/models/Position";
 import type Size from "acore-ts/ui/models/Size";
 import ResizeHelper from "acore-ts/ui/ResizeHelper";
-import { createSignal, Show, type JSX } from "solid-js";
+import { createEffect, createSignal, Show, type JSX } from "solid-js";
 import IconSvgs from "../constants/IconSvgs";
 import SvgIcon from "./SvgIcon";
 
 type IconComponent = (props: { icon: string; class?: string }) => JSX.Element;
 type ButtonComponent = (props: { onClick?: () => void; ariaLabel?: string; children?: JSX.Element }) => JSX.Element;
 
+export type ModalStyles = {
+  wrapper?: string;
+  header?: string;
+  title?: string;
+  headerButtons?: string;
+  maximizeButton?: string;
+  closeButton?: string;
+  icon?: string;
+  content?: string;
+};
+
 type Props = {
   children: JSX.Element;
-  class?: string;
   customHeaderButtons?: JSX.Element;
   draggable?: boolean;
   dragOffset?: Offset;
-  headerClass?: string;
   isMaximized?: boolean;
   maximizable?: boolean;
   maximizeOffset?: Offset;
@@ -33,6 +42,7 @@ type Props = {
   size?: Size;
   style?: JSX.CSSProperties;
   title?: string;
+  styles?: ModalStyles;
   // Component dependencies
   IconComponent?: IconComponent;
   customButton?: ButtonComponent;
@@ -49,57 +59,35 @@ type Props = {
  *
  * @param props - The component properties.
  * @param props.children - The content of the modal.
- * @param props.class - The class name for the modal container.
  * @param props.customHeaderButtons - The custom header buttons.
  * @param props.dragOffset - The offset for dragging the modal.
- * @param props.headerClass - The class name for the header.
+ * @param props.draggable - Whether the modal is draggable.
  * @param props.isMaximized - Whether the modal is maximized.
  * @param props.maximizable - Whether the modal can be maximized.
  * @param props.maximizeOffset - The offset for maximizing the modal.
- * @param props.onClick - The click event handler for the modal.
- * @param props.onClose - The close event handler for the modal.
- * @param props.onDragEnd - The drag end event handler.
- * @param props.onDragStart - The drag start event handler.
- * @param props.onResize - The resize event handler.
- * @param props.onResizeEnd - The resize end event handler.
- * @param props.onResizeStart - The resize start event handler.
- * @param props.onToggleMaximize - The event handler for toggling maximize state.
+ * @param props.onClick - The callback when the modal is clicked.
+ * @param props.onClose - The callback when the modal is closed.
+ * @param props.onDragEnd - The callback when dragging ends.
+ * @param props.onDragStart - The callback when dragging starts.
+ * @param props.onResize - The callback when the modal is resized.
+ * @param props.onResizeEnd - The callback when resizing ends.
+ * @param props.onResizeStart - The callback when resizing starts.
+ * @param props.onToggleMaximize - The callback when maximize is toggled.
  * @param props.position - The position of the modal.
  * @param props.size - The size of the modal.
- * @param props.style - The style properties for the modal.
+ * @param props.style - The inline CSS styles for the modal container.
  * @param props.title - The title of the modal.
- * @param props.IconComponent - The icon component.
- * @param props.ButtonComponent - The button component.
+ * @param props.styles - The style overrides for modal elements.
+ * @param props.IconComponent - The custom icon component.
+ * @param props.customButton - The custom button component.
  * @param props.closeIcon - The icon identifier for the close button.
  * @param props.maximizeIcon - The icon identifier for the maximize button.
- * @param props.maximizeAriaLabel - The aria label for the maximize button.
- * @param props.closeAriaLabel - The aria label for the close button.
+ * @param props.maximizeAriaLabel - The aria-label for the maximize button.
+ * @param props.closeAriaLabel - The aria-label for the close button.
  */
 export default function Modal(props: Props) {
-  const maximizable = props.maximizable ?? true;
-  const draggable = props.draggable ?? true;
-
   const [isModalOpen, setIsModalOpen] = createSignal(true);
   const [isMaximized, setIsMaximized] = createSignal(props.isMaximized ?? false);
-
-  function onContainerMount(element: HTMLElement) {
-    if (draggable) {
-      DragHelper.makeDraggableElement(element, {
-        onDragStart,
-        onDragEnd,
-        offset: props.dragOffset,
-      });
-    }
-
-    ResizeHelper.makeResizableElement(element, {
-      onResizeStart: (event, size) => {
-        props.onResizeStart?.(event, size, new Position(element.offsetTop, element.offsetLeft));
-      },
-      onResizeEnd: (event, size) => {
-        props.onResizeEnd?.(event, size, new Position(element.offsetTop, element.offsetLeft));
-      },
-    });
-  }
 
   function toggleModal() {
     setIsModalOpen(!isModalOpen());
@@ -107,70 +95,118 @@ export default function Modal(props: Props) {
   }
 
   function toggleMaximize() {
-    if (!maximizable) return;
-
-    const nextIsMaximizedValue: boolean = !isMaximized();
-    setIsMaximized(nextIsMaximizedValue);
-    props.onToggleMaximize?.(nextIsMaximizedValue);
+    const newMaximizedState = !isMaximized();
+    setIsMaximized(newMaximizedState);
+    props.onToggleMaximize?.(newMaximizedState);
   }
 
-  function onClick(event: MouseEvent) {
-    if (isHeaderButton(event.target as HTMLElement)) return;
-
-    props.onClick?.();
+  function onDragStart(event: MouseEvent) {
+    if (!props.draggable) return;
+    props.onDragStart?.(event, new Position(event.clientX, event.clientY));
   }
 
-  function onDragStart(event: MouseEvent, position: Position) {
-    props.onDragStart?.(event, position);
+  function onDragEnd(event: MouseEvent) {
+    if (!props.draggable) return;
+    props.onDragEnd?.(event, new Position(event.clientX, event.clientY));
   }
 
-  function onDragEnd(event: MouseEvent, position: Position) {
-    props.onDragEnd?.(event, position);
+  function onResizeStart(event: Event) {
+    if (!props.size) return;
+    const target = event.target as HTMLElement;
+    const startX = event.clientX;
+    const startY = event.clientY;
+    const startWidth = parseInt(document.defaultView!.getComputedStyle(target).width, 10);
+    const startHeight = parseInt(document.defaultView!.getComputedStyle(target).height, 10);
+    const startLeft = parseInt(document.defaultView!.getComputedStyle(target).left, 10);
+    const startTop = parseInt(document.defaultView!.getComputedStyle(target).top, 10);
+
+    props.onResizeStart?.(event, new Size(startWidth, startHeight), new Position(startLeft, startTop));
+
+    function onMouseMove(event: MouseEvent) {
+      if (!props.size) return;
+      const newWidth = startWidth + event.clientX - startX;
+      const newHeight = startHeight + event.clientY - startY;
+      const newLeft = startLeft + event.clientX - startX;
+      const newTop = startTop + event.clientY - startY;
+
+      props.onResize?.(event, new Size(newWidth, newHeight), new Position(newLeft, newTop));
+    }
+
+    function onMouseUp(event: MouseEvent) {
+      if (!props.size) return;
+      const newWidth = startWidth + event.clientX - startX;
+      const newHeight = startHeight + event.clientY - startY;
+      const newLeft = startLeft + event.clientX - startX;
+      const newTop = startTop + event.clientY - startY;
+
+      props.onResizeEnd?.(event, new Size(newWidth, newHeight), new Position(newLeft, newTop));
+
+      document.removeEventListener("mousemove", onMouseMove);
+      document.removeEventListener("mouseup", onMouseUp);
+    }
+
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseup", onMouseUp);
   }
 
-  function isHeaderButton(targetElement: HTMLElement) {
-    return targetElement.closest(".ac-header-buttons");
+  function onHeaderDoubleClick() {
+    if (props.maximizable) {
+      toggleMaximize();
+    }
   }
 
-  function onHeaderDoubleClick(event: MouseEvent) {
-    // Ignore if clicking buttons or if window is not maximizable
-    if (isHeaderButton(event.target as HTMLElement) || !maximizable) return;
+  function onContainerMount(element: HTMLDivElement) {
+    if (!props.draggable || !props.size) return;
 
-    toggleMaximize();
+    const header = element.querySelector("header") as HTMLElement;
+    const container = element;
+
+    let dragHelper: DragHelper | undefined;
+    let resizeHelper: ResizeHelper | undefined;
+
+    createEffect(() => {
+      if (props.draggable && header && container) {
+        dragHelper = new DragHelper(header, container, props.position ?? new Position(15, 15));
+        dragHelper.onDragStart = onDragStart;
+        dragHelper.onDragEnd = onDragEnd;
+      }
+
+      if (props.size && container) {
+        resizeHelper = new ResizeHelper(container, props.size, props.position ?? new Position(15, 15));
+        resizeHelper.onResizeStart = onResizeStart;
+      }
+    });
   }
 
   return (
     <Show when={isModalOpen()}>
       <div
         ref={onContainerMount}
-        onClick={onClick}
-        class={mergeCls(
-          "fixed flex min-h-52 min-w-60 transform flex-col overflow-hidden rounded border border-gray-300",
-          props.class,
-        )}
+        onClick={props.onClick}
+        class={mergeCls("fixed flex flex-col overflow-hidden rounded", props.styles?.wrapper)}
         style={{
           top:
-            (isMaximized() ?? maximizable)
+            (isMaximized() ?? props.maximizable)
               ? `${0 + (props.maximizeOffset?.top ?? 0)}px`
               : props.position?.top
                 ? `${props.position.top}px`
                 : "15%",
           left:
-            (isMaximized() ?? maximizable)
+            (isMaximized() ?? props.maximizable)
               ? `${0 + (props.maximizeOffset?.left ?? 0)}px`
               : props.position?.left
                 ? `${props.position.left}px`
                 : "15%",
-          right: (isMaximized() ?? maximizable) ? `${0 + (props.maximizeOffset?.right ?? 0)}px` : undefined,
-          bottom: (isMaximized() ?? maximizable) ? `${0 + (props.maximizeOffset?.bottom ?? 0)}px` : undefined,
+          right: (isMaximized() ?? props.maximizable) ? `${0 + (props.maximizeOffset?.right ?? 0)}px` : undefined,
+          bottom: (isMaximized() ?? props.maximizable) ? `${0 + (props.maximizeOffset?.bottom ?? 0)}px` : undefined,
           width:
-            (isMaximized() ?? maximizable)
+            (isMaximized() ?? props.maximizable)
               ? `calc(100vw - ${props.maximizeOffset?.left ?? 0}px - ${props.maximizeOffset?.right ?? 0}px)`
               : props.size?.width
                 ? `${props.size.width}px`
                 : "70vw",
           height:
-            (isMaximized() ?? maximizable)
+            (isMaximized() ?? props.maximizable)
               ? `calc(100svh - ${props.maximizeOffset?.top ?? 0}px - ${props.maximizeOffset?.bottom ?? 0}px)`
               : props.size?.height
                 ? `${props.size.height}px`
@@ -178,35 +214,47 @@ export default function Modal(props: Props) {
           ...props.style,
         }}
       >
-        <header
-          class={mergeCls("flex items-center justify-between gap-2 p-2", props.headerClass)}
-          onDblClick={onHeaderDoubleClick}
-        >
-          <h2 class="m-0 text-xl font-semibold">{props.title}</h2>
+        <header class={mergeCls("flex gap-2 p-2", props.styles?.header)} onDblClick={onHeaderDoubleClick}>
+          <h2 class={mergeCls("m-0", props.styles?.title)}>{props.title}</h2>
 
-          <div class="ac-header-buttons flex cursor-pointer items-center justify-between gap-1">
+          <div class={mergeCls("flex cursor-pointer items-center justify-between gap-1", props.styles?.headerButtons)}>
             {props.customHeaderButtons}
 
-            <Show when={maximizable}>
+            <Show when={props.maximizable}>
               <Show
                 when={props.customButton}
                 fallback={
                   <button
                     onClick={toggleMaximize}
-                    class="rounded p-1 text-gray-500 transition-colors duration-200 ease-in-out hover:bg-gray-100"
+                    class={mergeCls("cursor-pointer rounded p-1", props.styles?.maximizeButton)}
                     aria-label={props.maximizeAriaLabel}
                   >
-                    <SvgIcon svg={IconSvgs.maximize} class="size-4" alt="Maximize icon" />
+                    <SvgIcon
+                      svg={IconSvgs.maximize}
+                      styles={{ wrapper: mergeCls("select-none", props.styles?.icon) }}
+                      alt="Maximize icon"
+                    />
                   </button>
                 }
               >
                 {props.customButton && (
-                  <props.customButton onClick={toggleMaximize} ariaLabel={props.closeAriaLabel}>
+                  <props.customButton onClick={toggleMaximize} ariaLabel={props.maximizeAriaLabel}>
                     <Show
                       when={props.IconComponent}
-                      fallback={<SvgIcon svg={IconSvgs.maximize} class="size-4" alt="Maximize icon" />}
+                      fallback={
+                        <SvgIcon
+                          svg={IconSvgs.maximize}
+                          styles={{ wrapper: mergeCls("select-none", props.styles?.icon) }}
+                          alt="Maximize icon"
+                        />
+                      }
                     >
-                      {props.IconComponent && <props.IconComponent icon={props.maximizeIcon!} class="size-4" />}
+                      {props.IconComponent && (
+                        <props.IconComponent
+                          icon={props.maximizeIcon!}
+                          class={mergeCls("select-none", props.styles?.icon)}
+                        />
+                      )}
                     </Show>
                   </props.customButton>
                 )}
@@ -218,10 +266,14 @@ export default function Modal(props: Props) {
               fallback={
                 <button
                   onClick={toggleModal}
-                  class="rounded p-1 text-gray-300 transition-colors duration-200 ease-in-out hover:bg-gray-700 hover:text-white"
+                  class={mergeCls("cursor-pointer rounded p-1", props.styles?.closeButton)}
                   aria-label={props.closeAriaLabel}
                 >
-                  <SvgIcon svg={IconSvgs.close} class="size-4" alt="Close icon" />
+                  <SvgIcon
+                    svg={IconSvgs.close}
+                    styles={{ wrapper: mergeCls("select-none", props.styles?.icon) }}
+                    alt="Close icon"
+                  />
                 </button>
               }
             >
@@ -229,9 +281,20 @@ export default function Modal(props: Props) {
                 <props.customButton onClick={toggleModal} ariaLabel={props.closeAriaLabel}>
                   <Show
                     when={props.IconComponent}
-                    fallback={<SvgIcon svg={IconSvgs.close} class="size-4" alt="Close icon" />}
+                    fallback={
+                      <SvgIcon
+                        svg={IconSvgs.close}
+                        styles={{ wrapper: mergeCls("select-none", props.styles?.icon) }}
+                        alt="Close icon"
+                      />
+                    }
                   >
-                    {props.IconComponent && <props.IconComponent icon={props.closeIcon!} class="size-4" />}
+                    {props.IconComponent && (
+                      <props.IconComponent
+                        icon={props.closeIcon!}
+                        class={mergeCls("select-none", props.styles?.icon)}
+                      />
+                    )}
                   </Show>
                 </props.customButton>
               )}
@@ -239,7 +302,7 @@ export default function Modal(props: Props) {
           </div>
         </header>
 
-        <main class="flex-grow overflow-auto">{props.children}</main>
+        <main class={mergeCls("flex-grow overflow-auto", props.styles?.content)}>{props.children}</main>
       </div>
     </Show>
   );

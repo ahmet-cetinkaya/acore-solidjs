@@ -9,12 +9,13 @@ export type BaseDropdownItem = {
   items?: BaseDropdownItem[];
 };
 
-type DropdownStyles = {
+export type DropdownStyles = {
   wrapper?: string;
   button?: string;
   menu?: string;
   menuContainer?: string;
   menuItem?: string;
+  menuItemText?: string;
   categoryHeader?: string;
 };
 
@@ -59,28 +60,26 @@ export default function Dropdown(props: Props) {
       </button>
 
       <Show when={isOpen()}>
-        <Menu />
+        <DropdownMenu />
       </Show>
     </div>
   );
 
-  function Menu() {
+  function DropdownMenu() {
     return (
-      <div class={mergeCls(props.styles?.menu)}>
-        <div class={mergeCls(props.styles?.menuContainer)} role="menu" aria-orientation="vertical" aria-labelledby="options-menu">
+      <div class={mergeCls("absolute left-0 z-50 mt-2 min-w-48 rounded-md shadow-lg", props.styles?.menu)}>
+        <div
+          class={mergeCls("py-1", props.styles?.menuContainer)}
+          role="menu"
+          aria-orientation="vertical"
+          aria-labelledby="options-menu"
+        >
           <Index each={props.menuItems}>
             {(item) => {
-              if (item().items)
-                return (
-                  <>
-                    <h1 class={mergeCls(props.styles?.categoryHeader)}>{item().text}</h1>
-                    <Index each={item().items}>
-                      {(subitem) => <MenuItem item={subitem()} renderIcon={props.renderIcon} styles={props.styles} />}
-                    </Index>
-                  </>
-                );
-
-              return <MenuItem item={item()} renderIcon={props.renderIcon} styles={props.styles} />;
+              if (item().items && item().items!.length > 0) {
+                return <CategoryMenuItem item={item()} />;
+              }
+              return <MenuItem item={item()} />;
             }}
           </Index>
         </div>
@@ -88,12 +87,21 @@ export default function Dropdown(props: Props) {
     );
   }
 
-  function MenuItem(props: {
-    item: BaseDropdownItem;
-    renderIcon?: (icon: string) => JSX.Element;
-    styles?: DropdownStyles;
-  }) {
-    const classes = mergeCls("cursor-pointer", props.styles?.menuItem);
+  function CategoryMenuItem(props: { item: BaseDropdownItem }) {
+    return (
+      <div class={mergeCls("border-b border-gray-200", props.styles?.categoryHeader)}>
+        <div class="py-1">
+          <h4 class="px-4 py-1 text-xs font-bold uppercase text-gray-400">{props.item.text}</h4>
+          <Index each={props.item.items}>{(item) => <MenuItem item={item()} />}</Index>
+        </div>
+      </div>
+    );
+  }
+
+  function MenuItem(props: { item: BaseDropdownItem }) {
+    const defaultMenuItemClass =
+      "block px-4 py-2 text-sm w-full text-start border-none shadow-none cursor-pointer rounded transition-colors duration-200 ease-in-out hover:bg-gray-100";
+    const classes = mergeCls(defaultMenuItemClass, props.styles?.menuItem);
 
     function onClick() {
       setIsOpen(false);
@@ -102,24 +110,17 @@ export default function Dropdown(props: Props) {
 
     if (props.item.href)
       return (
-        <a href={props.item.href} onClick={onClick} class={classes} aria-label={props.item.text} role="menuitem">
-          {renderMenuItem(props.item)}
+        <a href={props.item.href} class={classes} onClick={onClick} role="menuitem">
+          {props.renderIcon?.(props.item.icon!)}
+          <span class={mergeCls("ml-2", props.styles?.menuItemText)}>{props.item.text}</span>
         </a>
       );
-    else
-      return (
-        <button onClick={onClick} class={classes} aria-label={props.item.text} role="menuitem">
-          {renderMenuItem(props.item)}
-        </button>
-      );
 
-    function renderMenuItem(item: BaseDropdownItem) {
-      return (
-        <span class="flex items-center gap-2">
-          <Show when={item.icon && props.renderIcon}>{item.icon && props.renderIcon?.(item.icon)}</Show>
-          {item.text}
-        </span>
-      );
-    }
+    return (
+      <button type="button" class={classes} onClick={onClick} role="menuitem">
+        {props.renderIcon?.(props.item.icon!)}
+        <span class={mergeCls("ml-2", props.styles?.menuItemText)}>{props.item.text}</span>
+      </button>
+    );
   }
 }

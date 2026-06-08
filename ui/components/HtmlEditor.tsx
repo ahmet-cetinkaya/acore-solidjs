@@ -10,10 +10,16 @@ type ToolbarButton = {
   label: string;
 };
 
+export type HtmlEditorStyles = {
+  wrapper?: string;
+  toolbar?: string;
+  toolbarButton?: string;
+  toolbarIcon?: string;
+  inputWrapper?: string;
+  editor?: string;
+};
+
 export type Props = {
-  class?: string;
-  inputClass?: string;
-  toolbarClass?: string;
   toolbarButtons?: {
     bold: ToolbarButton;
     underline: ToolbarButton;
@@ -28,19 +34,18 @@ export type Props = {
   enterUrlPromptText?: string;
   onInput?: (html: string) => void;
   customButtonComponent?: ButtonComponentFunc;
+  styles?: HtmlEditorStyles;
 };
 
 /**
  * HtmlEditor is a component for editing HTML content with a toolbar.
  *
  * @param props - The component properties.
- * @param props.class - The class name for the root element.
- * @param props.inputClass - The class name for the input element.
  * @param props.onInput - The callback function that is called when the input changes.
- * @param props.toolbarClass - The class name for the toolbar element.
  * @param props.toolbarButtons - The toolbar button configurations.
  * @param props.enterUrlPromptText - The prompt text for entering a URL.
  * @param props.customButtonComponent - The custom button component.
+ * @param props.styles - Style overrides for editor elements.
  */
 export default function HtmlEditor(props: Props) {
   let editorInstance: HtmlEditorManager | undefined;
@@ -48,92 +53,58 @@ export default function HtmlEditor(props: Props) {
   const toolbarButtons = createMemo(() => getToolbarButtons(props.toolbarButtons));
 
   function onEditorMount(editorElement: HTMLElement) {
-    editorInstance = new HtmlEditorManager(editorElement, onEditorChange);
-    editorInstance.attachEventListeners();
+    editorInstance = new HtmlEditorManager(editorElement);
+    editorInstance.onInput = (html) => {
+      props.onInput?.(html);
+    };
+
+    onCleanup(() => {
+      if (editorInstance) {
+        editorInstance.destroy();
+      }
+    });
   }
 
-  onCleanup(() => {
-    if (editorInstance) editorInstance.detachEventListeners();
-  });
+  function onButtonClick(formatType: FormatType) {
+    if (!editorInstance) return;
+    editorInstance.execute(formatType);
+  }
 
-  function onEditorChange(html: string) {
-    if (props.onInput) props.onInput(html);
+  function onLinkButtonClick() {
+    if (!editorInstance) return;
+    const url = prompt(props.enterUrlPromptText || "Enter URL:");
+    if (url) {
+      editorInstance.createLink(url);
+    }
   }
 
   return (
-    <section class={mergeCls(props.class)}>
-      <header class={mergeCls("mb-2 flex border-b p-2", props.toolbarClass)}>
+    <section class={mergeCls(props.styles?.wrapper)}>
+      <header class={mergeCls("flex border-b p-2", props.styles?.toolbar)}>
         <Index each={toolbarButtons()}>
           {(button) => (
             <ToolbarButton
-              iconSvg={button().icon}
-              onClick={() =>
-                button().clear
-                  ? editorInstance!.clearFormat()
-                  : editorInstance!.formatText(button().format as FormatType)
-              }
+              iconSvg={button().iconSvg}
               ariaLabel={button().label}
+              onClick={
+                button().label === "link" ? onLinkButtonClick : () => onButtonClick(button().label as FormatType)
+              }
               customButtonComponent={props.customButtonComponent}
+              styles={props.styles}
             />
           )}
         </Index>
       </header>
-      <div class={mergeCls("mt-2 w-full overflow-y-auto p-4", props.inputClass)}>
-        <article ref={onEditorMount} contentEditable class="size-full p-1 outline-none" />
+
+      <div class={mergeCls("w-full overflow-y-auto p-4", props.styles?.inputWrapper)}>
+        <article
+          ref={onEditorMount}
+          contentEditable
+          class={mergeCls("size-full p-1 outline-none", props.styles?.editor)}
+        />
       </div>
     </section>
   );
-}
-
-function getToolbarButtons(toolbarButtons?: Props["toolbarButtons"]) {
-  return [
-    {
-      icon: toolbarButtons?.bold.iconSvg ?? IconSvgs.bold,
-      format: "b",
-      label: toolbarButtons?.bold.label ?? "bold",
-    },
-    {
-      icon: toolbarButtons?.underline.iconSvg ?? IconSvgs.underline,
-      format: "u",
-      label: toolbarButtons?.underline.label ?? "underline",
-    },
-    {
-      icon: toolbarButtons?.italic.iconSvg ?? IconSvgs.italic,
-      format: "i",
-      label: toolbarButtons?.italic.label ?? "italic",
-    },
-    {
-      icon: toolbarButtons?.heading1.iconSvg ?? IconSvgs.heading1,
-      format: "h1",
-      label: toolbarButtons?.heading1.label ?? "heading1",
-    },
-    {
-      icon: toolbarButtons?.heading2.iconSvg ?? IconSvgs.heading2,
-      format: "h2",
-      label: toolbarButtons?.heading2.label ?? "heading2",
-    },
-    {
-      icon: toolbarButtons?.unorderedList.iconSvg ?? IconSvgs.unorderedList,
-      format: "ul",
-      label: toolbarButtons?.unorderedList.label ?? "unorderedList",
-    },
-    {
-      icon: toolbarButtons?.orderedList.iconSvg ?? IconSvgs.orderedList,
-      format: "ol",
-      label: toolbarButtons?.orderedList.label ?? "orderedList",
-    },
-    {
-      icon: toolbarButtons?.link.iconSvg ?? IconSvgs.link,
-      format: "a",
-      label: toolbarButtons?.link.label ?? "link",
-    },
-    {
-      icon: toolbarButtons?.formatClear.iconSvg ?? IconSvgs.formatClear,
-      format: "",
-      label: toolbarButtons?.formatClear.label ?? "format clear",
-      clear: true,
-    },
-  ];
 }
 
 function ToolbarButton(props: {
@@ -141,6 +112,7 @@ function ToolbarButton(props: {
   ariaLabel: string;
   onClick: () => void;
   customButtonComponent?: ButtonComponentFunc;
+  styles?: HtmlEditorStyles;
 }) {
   return (
     <Show
@@ -148,18 +120,40 @@ function ToolbarButton(props: {
       fallback={
         <button
           onClick={props.onClick}
-          class="rounded p-1 text-gray-500 transition-colors duration-200 ease-in-out hover:bg-gray-100"
+          class={mergeCls("cursor-pointer rounded p-1", props.styles?.toolbarButton)}
           aria-label={props.ariaLabel}
         >
-          <Icon svg={props.iconSvg} alt={props.ariaLabel} class="size-4" />
+          <Icon
+            svg={props.iconSvg}
+            alt={props.ariaLabel}
+            styles={{ wrapper: mergeCls("select-none", props.styles?.toolbarIcon) }}
+          />
         </button>
       }
     >
       {props.customButtonComponent && (
         <props.customButtonComponent onClick={props.onClick} ariaLabel={props.ariaLabel}>
-          <Icon svg={props.iconSvg} alt={props.ariaLabel} class="size-4" />
+          <Icon
+            svg={props.iconSvg}
+            alt={props.ariaLabel}
+            styles={{ wrapper: mergeCls("select-none", props.styles?.toolbarIcon) }}
+          />
         </props.customButtonComponent>
       )}
     </Show>
   );
+}
+
+function getToolbarButtons(customButtons?: Props["toolbarButtons"]): ToolbarButton[] {
+  return [
+    { iconSvg: customButtons?.bold.iconSvg ?? IconSvgs.bold, label: "bold" },
+    { iconSvg: customButtons?.underline.iconSvg ?? IconSvgs.underline, label: "underline" },
+    { iconSvg: customButtons?.italic.iconSvg ?? IconSvgs.italic, label: "italic" },
+    { iconSvg: customButtons?.heading1.iconSvg ?? IconSvgs.heading1, label: "heading1" },
+    { iconSvg: customButtons?.heading2.iconSvg ?? IconSvgs.heading2, label: "heading2" },
+    { iconSvg: customButtons?.unorderedList.iconSvg ?? IconSvgs.unorderedList, label: "unorderedList" },
+    { iconSvg: customButtons?.orderedList.iconSvg ?? IconSvgs.orderedList, label: "orderedList" },
+    { iconSvg: customButtons?.link.iconSvg ?? IconSvgs.link, label: "link" },
+    { iconSvg: customButtons?.formatClear.iconSvg ?? IconSvgs.formatClear, label: "formatClear" },
+  ];
 }
