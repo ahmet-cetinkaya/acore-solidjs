@@ -29,6 +29,11 @@ type Props = {
  * @param props.preserveFill - If true, preserves original SVG fill colors instead of replacing with currentColor.
  */
 export default function SvgIcon(props: Props) {
+  const hasSizeClass = createMemo(() => {
+    const cls = props.styles?.wrapper || "";
+    return /(^|\s)(size-|w-|h-)/.test(cls);
+  });
+
   const processedSvg = createMemo(() => {
     if (!props.svg) {
       //eslint-disable-next-line no-console
@@ -36,7 +41,7 @@ export default function SvgIcon(props: Props) {
       return "";
     }
 
-    // If preserveFill is true, return the SVG as-is without modifying fills
+    // If preserveFill is true, return the SVG as-is
     if (props.preserveFill) {
       return props.svg;
     }
@@ -72,10 +77,13 @@ export default function SvgIcon(props: Props) {
     <svg
       onClick={props.onClick}
       innerHTML={processedSvg()}
-      class={mergeCls("select-none", props.styles?.wrapper, {
+      class={mergeCls("inline-block select-none", props.styles?.wrapper, {
         "animate-spin": props.isSpin ?? false,
       })}
-      style={props.style}
+      style={{
+        ...(hasSizeClass() ? {} : { width: "1em", height: "1em" }),
+        ...props.style,
+      }}
       role="img"
       aria-label={props.alt}
     />

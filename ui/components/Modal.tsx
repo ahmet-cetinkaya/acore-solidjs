@@ -217,7 +217,7 @@ export default function Modal(props: Props) {
         <header class={mergeCls("flex gap-2 p-2", props.styles?.header)} onDblClick={onHeaderDoubleClick}>
           <h2 class={mergeCls("m-0", props.styles?.title)}>{props.title}</h2>
 
-          <div class={mergeCls("flex cursor-pointer items-center justify-between gap-1", props.styles?.headerButtons)}>
+          <div class={mergeCls("ml-auto flex cursor-pointer items-center gap-1", props.styles?.headerButtons)}>
             {props.customHeaderButtons}
 
             <Show when={props.maximizable}>

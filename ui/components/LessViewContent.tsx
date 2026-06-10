@@ -80,7 +80,7 @@ export default function LessViewContent(props: Props) {
         <Show when={!expanded() && isContentOverflowing()}>
           <div
             class={mergeCls(
-              "pointer-events-none absolute bottom-0 left-0 h-16 w-full bg-gradient-to-t from-white to-transparent",
+              "from-surface-500 pointer-events-none absolute bottom-0 left-0 h-16 w-full bg-gradient-to-t to-transparent",
               props.styles?.gradientFade,
             )}
           />

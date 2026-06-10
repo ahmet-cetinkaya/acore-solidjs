@@ -37,6 +37,16 @@ export type Props = {
   styles?: HtmlEditorStyles;
 };
 
+const LABEL_TO_FORMAT: Record<string, FormatType> = {
+  bold: "b",
+  underline: "u",
+  italic: "i",
+  heading1: "h1",
+  heading2: "h2",
+  unorderedList: "ul",
+  orderedList: "ol",
+};
+
 /**
  * HtmlEditor is a component for editing HTML content with a toolbar.
  *
@@ -53,29 +63,35 @@ export default function HtmlEditor(props: Props) {
   const toolbarButtons = createMemo(() => getToolbarButtons(props.toolbarButtons));
 
   function onEditorMount(editorElement: HTMLElement) {
-    editorInstance = new HtmlEditorManager(editorElement);
-    editorInstance.onInput = (html) => {
+    const manager = new HtmlEditorManager(editorElement, (html) => {
       props.onInput?.(html);
-    };
+    });
+
+    if (props.enterUrlPromptText) {
+      manager.urlPromptText = props.enterUrlPromptText;
+    }
+
+    editorInstance = manager;
+    editorInstance.attachEventListeners();
 
     onCleanup(() => {
-      if (editorInstance) {
-        editorInstance.destroy();
-      }
+      editorInstance?.detachEventListeners();
+      editorInstance = undefined;
     });
   }
 
-  function onButtonClick(formatType: FormatType) {
+  function onButtonClick(label: string) {
     if (!editorInstance) return;
-    editorInstance.execute(formatType);
+    if (label === "formatClear") {
+      editorInstance.clearFormat();
+    } else {
+      const format = LABEL_TO_FORMAT[label];
+      if (format) editorInstance.formatText(format);
+    }
   }
 
   function onLinkButtonClick() {
-    if (!editorInstance) return;
-    const url = prompt(props.enterUrlPromptText || "Enter URL:");
-    if (url) {
-      editorInstance.createLink(url);
-    }
+    onButtonClick("link");
   }
 
   return (
@@ -86,9 +102,7 @@ export default function HtmlEditor(props: Props) {
             <ToolbarButton
               iconSvg={button().iconSvg}
               ariaLabel={button().label}
-              onClick={
-                button().label === "link" ? onLinkButtonClick : () => onButtonClick(button().label as FormatType)
-              }
+              onClick={button().label === "link" ? onLinkButtonClick : () => onButtonClick(button().label)}
               customButtonComponent={props.customButtonComponent}
               styles={props.styles}
             />
@@ -100,7 +114,7 @@ export default function HtmlEditor(props: Props) {
         <article
           ref={onEditorMount}
           contentEditable
-          class={mergeCls("size-full p-1 outline-none", props.styles?.editor)}
+          class={mergeCls("size-full select-text p-1 outline-none", props.styles?.editor)}
         />
       </div>
     </section>
@@ -114,33 +128,39 @@ function ToolbarButton(props: {
   customButtonComponent?: ButtonComponentFunc;
   styles?: HtmlEditorStyles;
 }) {
+  function onMouseDown(e: MouseEvent) {
+    e.preventDefault();
+  }
+
   return (
-    <Show
-      when={props.customButtonComponent}
-      fallback={
-        <button
-          onClick={props.onClick}
-          class={mergeCls("cursor-pointer rounded p-1", props.styles?.toolbarButton)}
-          aria-label={props.ariaLabel}
-        >
-          <Icon
-            svg={props.iconSvg}
-            alt={props.ariaLabel}
-            styles={{ wrapper: mergeCls("select-none", props.styles?.toolbarIcon) }}
-          />
-        </button>
-      }
-    >
-      {props.customButtonComponent && (
-        <props.customButtonComponent onClick={props.onClick} ariaLabel={props.ariaLabel}>
-          <Icon
-            svg={props.iconSvg}
-            alt={props.ariaLabel}
-            styles={{ wrapper: mergeCls("select-none", props.styles?.toolbarIcon) }}
-          />
-        </props.customButtonComponent>
-      )}
-    </Show>
+    <span onMouseDown={onMouseDown}>
+      <Show
+        when={props.customButtonComponent}
+        fallback={
+          <button
+            onClick={props.onClick}
+            class={mergeCls("cursor-pointer rounded p-1", props.styles?.toolbarButton)}
+            aria-label={props.ariaLabel}
+          >
+            <Icon
+              svg={props.iconSvg}
+              alt={props.ariaLabel}
+              styles={{ wrapper: mergeCls("select-none", props.styles?.toolbarIcon) }}
+            />
+          </button>
+        }
+      >
+        {props.customButtonComponent && (
+          <props.customButtonComponent onClick={props.onClick} ariaLabel={props.ariaLabel}>
+            <Icon
+              svg={props.iconSvg}
+              alt={props.ariaLabel}
+              styles={{ wrapper: mergeCls("select-none", props.styles?.toolbarIcon) }}
+            />
+          </props.customButtonComponent>
+        )}
+      </Show>
+    </span>
   );
 }
 

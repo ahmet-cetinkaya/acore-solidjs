@@ -77,9 +77,9 @@ export default function Dropdown(props: Props) {
           <Index each={props.menuItems}>
             {(item) => {
               if (item().items && item().items!.length > 0) {
-                return <CategoryMenuItem item={item()} />;
+                return <CategoryMenuItem item={item()} renderIcon={props.renderIcon} styles={props.styles} />;
               }
-              return <MenuItem item={item()} />;
+              return <MenuItem item={item()} renderIcon={props.renderIcon} styles={props.styles} />;
             }}
           </Index>
         </div>
@@ -87,18 +87,26 @@ export default function Dropdown(props: Props) {
     );
   }
 
-  function CategoryMenuItem(props: { item: BaseDropdownItem }) {
+  function CategoryMenuItem(props: {
+    item: BaseDropdownItem;
+    renderIcon?: (icon: string) => JSX.Element;
+    styles?: DropdownStyles;
+  }) {
     return (
-      <div class={mergeCls("border-b border-gray-200", props.styles?.categoryHeader)}>
-        <div class="py-1">
-          <h4 class="px-4 py-1 text-xs font-bold uppercase text-gray-400">{props.item.text}</h4>
-          <Index each={props.item.items}>{(item) => <MenuItem item={item()} />}</Index>
-        </div>
-      </div>
+      <>
+        <h4 class={mergeCls("border-b px-4 py-2 text-xs", props.styles?.categoryHeader)}>{props.item.text}</h4>
+        <Index each={props.item.items}>
+          {(item) => <MenuItem item={item()} renderIcon={props.renderIcon} styles={props.styles} />}
+        </Index>
+      </>
     );
   }
 
-  function MenuItem(props: { item: BaseDropdownItem }) {
+  function MenuItem(props: {
+    item: BaseDropdownItem;
+    renderIcon?: (icon: string) => JSX.Element;
+    styles?: DropdownStyles;
+  }) {
     const defaultMenuItemClass =
       "block px-4 py-2 text-sm w-full text-start border-none shadow-none cursor-pointer rounded transition-colors duration-200 ease-in-out hover:bg-gray-100";
     const classes = mergeCls(defaultMenuItemClass, props.styles?.menuItem);
@@ -111,15 +119,19 @@ export default function Dropdown(props: Props) {
     if (props.item.href)
       return (
         <a href={props.item.href} class={classes} onClick={onClick} role="menuitem">
-          {props.renderIcon?.(props.item.icon!)}
-          <span class={mergeCls("ml-2", props.styles?.menuItemText)}>{props.item.text}</span>
+          <span class="flex items-center gap-2">
+            {props.item.icon && props.renderIcon?.(props.item.icon)}
+            <span class={props.styles?.menuItemText}>{props.item.text}</span>
+          </span>
         </a>
       );
 
     return (
       <button type="button" class={classes} onClick={onClick} role="menuitem">
-        {props.renderIcon?.(props.item.icon!)}
-        <span class={mergeCls("ml-2", props.styles?.menuItemText)}>{props.item.text}</span>
+        <span class="flex items-center gap-2">
+          {props.item.icon && props.renderIcon?.(props.item.icon)}
+          <span class={props.styles?.menuItemText}>{props.item.text}</span>
+        </span>
       </button>
     );
   }

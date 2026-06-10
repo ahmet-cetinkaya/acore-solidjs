@@ -58,6 +58,7 @@ type Props = {
 
   styles?: ThreeDViewerStyles;
   loadingElement?: JSX.Element;
+  class?: string;
 };
 
 /**
@@ -424,7 +425,7 @@ export default function ThreeDimensionModelViewer(props: Props) {
   return (
     <div
       ref={(element) => onContainerElementMount(element)}
-      class={mergeCls("relative size-full", props.styles?.wrapper)}
+      class={mergeCls("relative size-full", props.class, props.styles?.wrapper)}
     >
       {/* Loading Element - Always positioned at front of scene stack */}
       <div
