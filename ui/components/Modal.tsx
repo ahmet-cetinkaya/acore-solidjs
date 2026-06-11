@@ -86,6 +86,7 @@ type Props = {
  * @param props.closeAriaLabel - The aria-label for the close button.
  */
 export default function Modal(props: Props) {
+  const draggable = props.draggable ?? true;
   const [isModalOpen, setIsModalOpen] = createSignal(true);
   const [isMaximized, setIsMaximized] = createSignal(props.isMaximized ?? false);
 
@@ -100,53 +101,12 @@ export default function Modal(props: Props) {
     props.onToggleMaximize?.(newMaximizedState);
   }
 
-  function onDragStart(event: MouseEvent) {
-    if (!props.draggable) return;
-    props.onDragStart?.(event, new Position(event.clientX, event.clientY));
+  function onDragStart(event: MouseEvent, position: Position) {
+    props.onDragStart?.(event, position);
   }
 
-  function onDragEnd(event: MouseEvent) {
-    if (!props.draggable) return;
-    props.onDragEnd?.(event, new Position(event.clientX, event.clientY));
-  }
-
-  function onResizeStart(event: Event) {
-    if (!props.size) return;
-    const target = event.target as HTMLElement;
-    const startX = event.clientX;
-    const startY = event.clientY;
-    const startWidth = parseInt(document.defaultView!.getComputedStyle(target).width, 10);
-    const startHeight = parseInt(document.defaultView!.getComputedStyle(target).height, 10);
-    const startLeft = parseInt(document.defaultView!.getComputedStyle(target).left, 10);
-    const startTop = parseInt(document.defaultView!.getComputedStyle(target).top, 10);
-
-    props.onResizeStart?.(event, new Size(startWidth, startHeight), new Position(startLeft, startTop));
-
-    function onMouseMove(event: MouseEvent) {
-      if (!props.size) return;
-      const newWidth = startWidth + event.clientX - startX;
-      const newHeight = startHeight + event.clientY - startY;
-      const newLeft = startLeft + event.clientX - startX;
-      const newTop = startTop + event.clientY - startY;
-
-      props.onResize?.(event, new Size(newWidth, newHeight), new Position(newLeft, newTop));
-    }
-
-    function onMouseUp(event: MouseEvent) {
-      if (!props.size) return;
-      const newWidth = startWidth + event.clientX - startX;
-      const newHeight = startHeight + event.clientY - startY;
-      const newLeft = startLeft + event.clientX - startX;
-      const newTop = startTop + event.clientY - startY;
-
-      props.onResizeEnd?.(event, new Size(newWidth, newHeight), new Position(newLeft, newTop));
-
-      document.removeEventListener("mousemove", onMouseMove);
-      document.removeEventListener("mouseup", onMouseUp);
-    }
-
-    document.addEventListener("mousemove", onMouseMove);
-    document.addEventListener("mouseup", onMouseUp);
+  function onDragEnd(event: MouseEvent, position: Position) {
+    props.onDragEnd?.(event, position);
   }
 
   function onHeaderDoubleClick() {
@@ -156,26 +116,24 @@ export default function Modal(props: Props) {
   }
 
   function onContainerMount(element: HTMLDivElement) {
-    if (!props.draggable || !props.size) return;
+    if (draggable) {
+      DragHelper.makeDraggableElement(element, {
+        onDragStart,
+        onDragEnd,
+        offset: props.dragOffset,
+      });
+    }
 
-    const header = element.querySelector("header") as HTMLElement;
-    const container = element;
-
-    let dragHelper: DragHelper | undefined;
-    let resizeHelper: ResizeHelper | undefined;
-
-    createEffect(() => {
-      if (props.draggable && header && container) {
-        dragHelper = new DragHelper(header, container, props.position ?? new Position(15, 15));
-        dragHelper.onDragStart = onDragStart;
-        dragHelper.onDragEnd = onDragEnd;
-      }
-
-      if (props.size && container) {
-        resizeHelper = new ResizeHelper(container, props.size, props.position ?? new Position(15, 15));
-        resizeHelper.onResizeStart = onResizeStart;
-      }
-    });
+    if (props.size || props.onResizeStart || props.onResizeEnd) {
+      ResizeHelper.makeResizableElement(element, {
+        onResizeStart: (event, size) => {
+          props.onResizeStart?.(event, size, new Position(element.offsetTop, element.offsetLeft));
+        },
+        onResizeEnd: (event, size) => {
+          props.onResizeEnd?.(event, size, new Position(element.offsetTop, element.offsetLeft));
+        },
+      });
+    }
   }
 
   return (
@@ -188,13 +146,13 @@ export default function Modal(props: Props) {
           top:
             (isMaximized() ?? props.maximizable)
               ? `${0 + (props.maximizeOffset?.top ?? 0)}px`
-              : props.position?.top
+              : typeof props.position?.top === "number"
                 ? `${props.position.top}px`
                 : "15%",
           left:
             (isMaximized() ?? props.maximizable)
               ? `${0 + (props.maximizeOffset?.left ?? 0)}px`
-              : props.position?.left
+              : typeof props.position?.left === "number"
                 ? `${props.position.left}px`
                 : "15%",
           right: (isMaximized() ?? props.maximizable) ? `${0 + (props.maximizeOffset?.right ?? 0)}px` : undefined,
