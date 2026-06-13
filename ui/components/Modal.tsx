@@ -4,7 +4,7 @@ import type { Offset } from "acore-ts/ui/models/Offset";
 import Position from "acore-ts/ui/models/Position";
 import type Size from "acore-ts/ui/models/Size";
 import ResizeHelper from "acore-ts/ui/ResizeHelper";
-import { createEffect, createSignal, Show, type JSX } from "solid-js";
+import { createSignal, Show, type JSX } from "solid-js";
 import IconSvgs from "../constants/IconSvgs";
 import SvgIcon from "./SvgIcon";
 
