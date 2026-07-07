@@ -39,6 +39,7 @@ type Props = {
   onResizeStart?: (event: Event, size: Size, position: Position) => void;
   onToggleMaximize?: (isMaximized: boolean) => void;
   position?: Position;
+  resizeOffset?: Offset;
   size?: Size;
   style?: JSX.CSSProperties;
   title?: string;
@@ -126,6 +127,7 @@ export default function Modal(props: Props) {
 
     if (props.size || props.onResizeStart || props.onResizeEnd) {
       ResizeHelper.makeResizableElement(element, {
+        offset: props.resizeOffset,
         onResizeStart: (event, size) => {
           props.onResizeStart?.(event, size, new Position(element.offsetTop, element.offsetLeft));
         },
