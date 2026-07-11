@@ -116,9 +116,14 @@ export default function Dropdown(props: Props) {
       props.item.onClick?.();
     }
 
+    function onAnchorClick(event: MouseEvent) {
+      if (props.item.onClick) event.preventDefault();
+      onClick();
+    }
+
     if (props.item.href)
       return (
-        <a href={props.item.href} class={classes} onClick={onClick} role="menuitem">
+        <a href={props.item.href} class={classes} onClick={onAnchorClick} role="menuitem">
           <span class="flex items-center gap-2">
             {props.item.icon && props.renderIcon?.(props.item.icon)}
             <span class={props.styles?.menuItemText}>{props.item.text}</span>
