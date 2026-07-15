@@ -123,7 +123,9 @@ export default function Modal(props: Props) {
         onDragEnd,
         offset: props.dragOffset,
       });
-      onCleanup(disposeDrag);
+      if (typeof disposeDrag === "function") {
+        onCleanup(disposeDrag);
+      }
     }
 
     if (props.size || props.onResizeStart || props.onResizeEnd) {
@@ -136,7 +138,9 @@ export default function Modal(props: Props) {
           props.onResizeEnd?.(event, size, new Position(element.offsetTop, element.offsetLeft));
         },
       });
-      onCleanup(disposeResize);
+      if (typeof disposeResize === "function") {
+        onCleanup(disposeResize);
+      }
     }
   }
 
