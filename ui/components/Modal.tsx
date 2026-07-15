@@ -4,7 +4,7 @@ import type { Offset } from "acore-ts/ui/models/Offset";
 import Position from "acore-ts/ui/models/Position";
 import type Size from "acore-ts/ui/models/Size";
 import ResizeHelper from "acore-ts/ui/ResizeHelper";
-import { createSignal, Show, type JSX } from "solid-js";
+import { createSignal, onCleanup, Show, type JSX } from "solid-js";
 import IconSvgs from "../constants/IconSvgs";
 import SvgIcon from "./SvgIcon";
 
@@ -118,15 +118,18 @@ export default function Modal(props: Props) {
 
   function onContainerMount(element: HTMLDivElement) {
     if (draggable) {
-      DragHelper.makeDraggableElement(element, {
+      const disposeDrag = DragHelper.makeDraggableElement(element, {
         onDragStart,
         onDragEnd,
         offset: props.dragOffset,
       });
+      if (typeof disposeDrag === "function") {
+        onCleanup(disposeDrag);
+      }
     }
 
     if (props.size || props.onResizeStart || props.onResizeEnd) {
-      ResizeHelper.makeResizableElement(element, {
+      const disposeResize = ResizeHelper.makeResizableElement(element, {
         offset: props.resizeOffset,
         onResizeStart: (event, size) => {
           props.onResizeStart?.(event, size, new Position(element.offsetTop, element.offsetLeft));
@@ -135,6 +138,9 @@ export default function Modal(props: Props) {
           props.onResizeEnd?.(event, size, new Position(element.offsetTop, element.offsetLeft));
         },
       });
+      if (typeof disposeResize === "function") {
+        onCleanup(disposeResize);
+      }
     }
   }
 
