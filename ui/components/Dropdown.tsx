@@ -28,8 +28,12 @@ type Props = {
   styles?: DropdownStyles;
 };
 
+const MENU_WIDTH = 224;
+
 export default function Dropdown(props: Props) {
   const [isOpen, setIsOpen] = createSignal(false);
+  const [openRight, setOpenRight] = createSignal(true);
+  let buttonRef: HTMLButtonElement | undefined;
 
   createEffect(() => {
     if (isOpen()) document.addEventListener("click", onClickOutside);
@@ -43,12 +47,17 @@ export default function Dropdown(props: Props) {
   }
 
   function onToggleDropdown() {
+    if (!isOpen() && buttonRef) {
+      const rect = buttonRef.getBoundingClientRect();
+      setOpenRight(rect.left + MENU_WIDTH <= window.innerWidth);
+    }
     setIsOpen(!isOpen());
   }
 
   return (
     <div id={props.id} class={mergeCls("relative", props.styles?.wrapper)}>
       <button
+        ref={buttonRef}
         type="button"
         onClick={onToggleDropdown}
         class={mergeCls("cursor-pointer", props.styles?.button)}
@@ -67,7 +76,10 @@ export default function Dropdown(props: Props) {
 
   function DropdownMenu() {
     return (
-      <div class={mergeCls("absolute left-0 z-50 mt-2 min-w-48 rounded-md shadow-lg", props.styles?.menu)}>
+      <div
+        class={mergeCls("absolute z-50 mt-2 min-w-48 rounded-md shadow-lg", props.styles?.menu)}
+        style={{ left: openRight() ? "0" : "auto", right: openRight() ? "auto" : "0", "transform-origin": openRight() ? "top left" : "top right" }}
+      >
         <div
           class={mergeCls("py-1", props.styles?.menuContainer)}
           role="menu"
